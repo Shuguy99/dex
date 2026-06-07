@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dex"
+version = "3.1.0"
+description = "Multi-functional voice AI assistant with full lifecycle"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "Dex Team"}
+]
+
+[project.urls]
+Homepage = "https://github.com/egorb/dex"
+Repository = "https://github.com/egorb/dex"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "ARG"]
+ignore = ["E501", "SIM102", "SIM105", "B018", "N802", "ARG002", "ARG005", "SIM112", "F401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001"]
+"ui/dashboard.py" = ["I001"]
+"run_exe.py" = ["I001"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,9 @@
+.git
+__pycache__
+.pytest_cache
+*.pyc
+data/
+dist/
+build/
+*.spec
+.DS_Store
