@@ -133,7 +133,7 @@ class ResearchAgent:
             "timestamp": datetime.now().isoformat()
         }
 
-    def _save_report(self, topic: str, report: dict[str, Any]):
+    def _save_report(self, topic: str, report: dict[str, Any]) -> None:
         safe = "".join(c if c.isalnum() else "_" for c in topic[:30])
         path = self._reports_dir / f"report_{safe}_{int(time.time())}.json"
         with open(path, "w", encoding="utf-8") as f:

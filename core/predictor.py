@@ -31,11 +31,11 @@ class PersonalPredictor:
                 pass
         return {"app_frequency": {}, "file_frequency": {}, "time_patterns": {}}
 
-    def _save_patterns(self):
+    def _save_patterns(self) -> None:
         with open(self._path, "w", encoding="utf-8") as f:
             json.dump(self._patterns, f, ensure_ascii=False, indent=2)
 
-    def record_launch(self, app_name: str):
+    def record_launch(self, app_name: str) -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "app": app_name,
@@ -56,7 +56,7 @@ class PersonalPredictor:
 
         self._save_patterns()
 
-    def record_file_open(self, file_path: str):
+    def record_file_open(self, file_path: str) -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "file": file_path,
@@ -69,13 +69,13 @@ class PersonalPredictor:
             self._patterns["file_frequency"].get(ext, 0) + 1
         self._save_patterns()
 
-    def record_command(self, command_name: str):
+    def record_command(self, command_name: str) -> None:
         if "command_frequency" not in self._patterns:
             self._patterns["command_frequency"] = {}
         self._patterns["command_frequency"][command_name] = \
             self._patterns["command_frequency"].get(command_name, 0) + 1
 
-    def analyze_patterns(self):
+    def analyze_patterns(self) -> None:
         freq = self._patterns.get("command_frequency", {})
         if not freq:
             return

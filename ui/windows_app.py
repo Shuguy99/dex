@@ -730,10 +730,14 @@ class DexWindowsApp(QMainWindow):
             self._mod_table.setItem(i, 2, QTableWidgetItem(str(len(list(dp.glob("*")))) if dp.exists() else "0"))
 
     def _refresh_diagnostics(self):
+        """Обновление дашборда диагностики"""
         if not self.assistant or not hasattr(self, "_diag_output"):
             return
-        report = self.assistant.diagnostics.report()
-        self._diag_output.setText(report)
+        try:
+            report = self.assistant.diagnostics.report()
+            self._diag_output.setText(report)
+        except Exception as e:
+            logger.error(f"Diagnostics refresh error: {e}")
 
     def _show_diagnostics(self):
         self._switch_page(2)

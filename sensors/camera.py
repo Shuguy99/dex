@@ -23,7 +23,7 @@ class Camera:
         except Exception:
             return False
 
-    def start(self):
+    def start(self) -> None:
         if self._privacy_mode:
             logger.warning("Camera blocked by privacy mode")
             return False
@@ -40,7 +40,7 @@ class Camera:
             logger.error(f"Camera start failed: {e}")
             return False
 
-    def stop(self):
+    def stop(self) -> None:
         self._active = False
         if self._capture:
             self._capture.release()
@@ -76,9 +76,9 @@ class Camera:
             logger.error(f"Face detection failed: {e}")
             return []
 
-    def enable_privacy_mode(self):
+    def enable_privacy_mode(self) -> None:
         self._privacy_mode = True
         self.stop()
 
-    def disable_privacy_mode(self):
+    def disable_privacy_mode(self) -> None:
         self._privacy_mode = False

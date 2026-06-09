@@ -23,7 +23,7 @@ class RAGEngine:
                 return json.load(f)
         return {}
 
-    def _save_index(self):
+    def _save_index(self) -> None:
         with open(self._index_path, "w", encoding="utf-8") as f:
             json.dump(self._index, f, ensure_ascii=False, indent=2)
 

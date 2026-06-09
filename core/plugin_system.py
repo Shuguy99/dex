@@ -22,9 +22,9 @@ class Plugin:
 
     def load(self) -> bool:
         try:
-            spec = importlib.util.spec_from_file_location(self.name, self.module_path)
+            spec = importlib.util.spec_from_file_location(self.name, self.module_path)  # type: ignore[attr-defined]
             if spec and spec.loader:
-                self._module = importlib.util.module_from_spec(spec)
+                self._module = importlib.util.module_from_spec(spec)  # type: ignore[attr-defined]
                 spec.loader.exec_module(self._module)
                 for _name, obj in inspect.getmembers(self._module):
                     if inspect.isclass(obj) and hasattr(obj, "execute"):
@@ -51,7 +51,7 @@ class PluginSystem:
         self._plugins: dict[str, Plugin] = {}
         self._manifest_path = self._plugins_dir / "manifest.json"
 
-    def discover(self):
+    def discover(self) -> None:
         for f_path in self._plugins_dir.rglob("*.py"):
             if f_path.name == "__init__.py":
                 continue
@@ -64,7 +64,15 @@ class PluginSystem:
                     module_path=str(f_path),
                     commands=manifest.get("commands", {})
                 )
-                self._plugins[plugin.name] = plugin
+            else:
+                plugin = Plugin(
+                    name=f_path.stem,
+                    version="0.1.0",
+                    description="",
+                    module_path=str(f_path),
+                    commands={}
+                )
+            self._plugins[plugin.name] = plugin
 
         for f_path in self._plugins_dir.rglob("plugin.json"):
             manifest = json.loads(f_path.read_text(encoding="utf-8"))
@@ -92,7 +100,7 @@ class PluginSystem:
             return self._plugins[name].load()
         return False
 
-    def load_all(self):
+    def load_all(self) -> None:
         for name in self._plugins:
             self._plugins[name].load()
 
@@ -107,6 +115,30 @@ class PluginSystem:
 
     def get_plugin(self, name: str) -> Plugin | None:
         return self._plugins.get(name)
+
+    def enable_plugin(self, name: str) -> bool:
+        plugin = self._plugins.get(name)
+        if plugin:
+            plugin.enabled = True
+            logger.info(f"Plugin enabled: {name}")
+            return True
+        return False
+
+    def disable_plugin(self, name: str) -> bool:
+        plugin = self._plugins.get(name)
+        if plugin:
+            plugin.enabled = False
+            logger.info(f"Plugin disabled: {name}")
+            return True
+        return False
+
+    def get_command_prefixes(self) -> dict[str, str]:
+        prefixes: dict[str, str] = {}
+        for plugin in self._plugins.values():
+            if plugin.enabled:
+                for cmd in plugin.commands:
+                    prefixes[cmd] = plugin.name
+        return prefixes
 
     def list_plugins(self) -> list[dict[str, Any]]:
         return [

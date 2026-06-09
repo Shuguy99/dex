@@ -17,7 +17,7 @@ class SecureMemory:
         self._key = key or os.environ.get("DEX_SQLCIPHER_KEY", "default-dev-key-change-me")
         self._conn: sqlite3.Connection | None = None
 
-    def initialize(self):
+    def initialize(self) -> bool:
         try:
             self._conn = sqlite3.connect(self._db_path)
             self._conn.execute(f"PRAGMA key = '{self._key}'")
@@ -42,7 +42,7 @@ class SecureMemory:
     def ready(self) -> bool:
         return self._conn is not None
 
-    def store(self, category: str, key_name: str, value: str):
+    def store(self, category: str, key_name: str, value: str) -> None:
         if not self.ready:
             logger.warning("Secure memory not ready")
             return
@@ -69,7 +69,7 @@ class SecureMemory:
             logger.error(f"Failed to retrieve secret: {e}")
             return None
 
-    def delete(self, key_name: str):
+    def delete(self, key_name: str) -> bool:
         if self.ready:
             self._conn.execute("DELETE FROM secrets WHERE key_name = ?", (key_name,))
             self._conn.commit()
@@ -85,7 +85,7 @@ class SecureMemory:
         lower = text.lower()
         return any(p in lower for p in SENSITIVE_PATTERNS)
 
-    def close(self):
+    def close(self) -> None:
         if self._conn:
             self._conn.close()
             self._conn = None

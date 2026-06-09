@@ -25,18 +25,18 @@ class AgentSwarm:
         self._peer_path = self._data_dir / "peers.json"
         self._command_handler: Callable | None = None
 
-    def start(self, command_handler: Callable | None = None):
+    def start(self, command_handler: Callable | None = None) -> None:
         self._command_handler = command_handler
         self._running = True
         self._server_thread = threading.Thread(target=self._serve, daemon=True)
         self._server_thread.start()
         logger.info(f"Mesh server started on port {self._port}")
 
-    def stop(self):
+    def stop(self) -> None:
         self._running = False
         logger.info("Mesh server stopped")
 
-    def _serve(self):
+    def _serve(self) -> None:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
@@ -58,7 +58,7 @@ class AgentSwarm:
                 logger.warning(f"Mesh accept error: {e}")
         server.close()
 
-    def _handle_peer(self, conn: socket.socket, addr: tuple):
+    def _handle_peer(self, conn: socket.socket, addr: tuple) -> None:
         try:
             data = conn.recv(4096)
             if not data:
@@ -85,7 +85,7 @@ class AgentSwarm:
             conn.close()
 
     def register_peer(self, peer_id: str, host: str, port: int,
-                      capabilities: list[str] | None = None):
+                      capabilities: list[str] | None = None) -> None:
         with self._lock:
             self._peers[peer_id] = {
                 "host": host,
@@ -97,7 +97,7 @@ class AgentSwarm:
         self._save_peers()
         logger.info(f"Peer registered: {peer_id} @ {host}:{port}")
 
-    def _save_peers(self):
+    def _save_peers(self) -> None:
         with open(self._peer_path, "w", encoding="utf-8") as f:
             data = {k: {**v, "last_seen": v["last_seen"]}
                     for k, v in self._peers.items()}

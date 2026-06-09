@@ -27,12 +27,12 @@ class LifePlanner:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._goals_path, "w", encoding="utf-8") as f:
             json.dump(self._goals, f, ensure_ascii=False, indent=2)
 
     def add_goal(self, description: str, category: str = "learning",
-                  deadline: str | None = None, priority: str = "medium"):
+                  deadline: str | None = None, priority: str = "medium") -> str:
         goal = {
             "id": f"goal_{len(self._goals)}",
             "description": description,
@@ -50,7 +50,7 @@ class LifePlanner:
         self._save()
         return goal["id"]
 
-    def add_step(self, goal_id: str, step_desc: str):
+    def add_step(self, goal_id: str, step_desc: str) -> None:
         goal = next((g for g in self._goals if g["id"] == goal_id), None)
         if not goal:
             return False
@@ -62,14 +62,14 @@ class LifePlanner:
         self._save()
         return True
 
-    def _update_progress(self, goal: dict):
+    def _update_progress(self, goal: dict) -> None:
         steps = goal.get("steps", [])
         if steps:
             completed = sum(1 for s in steps if s.get("completed"))
             goal["progress"] = completed / len(steps)
         self._save()
 
-    def complete_step(self, goal_id: str, step_index: int):
+    def complete_step(self, goal_id: str, step_index: int) -> None:
         goal = next((g for g in self._goals if g["id"] == goal_id), None)
         if not goal or step_index >= len(goal.get("steps", [])):
             return False
@@ -105,7 +105,7 @@ class LifePlanner:
 
         return suggestions[:5]
 
-    def check_in(self, daily_log: str = ""):
+    def check_in(self, daily_log: str = "") -> dict[str, Any]:
         for goal in self._goals:
             if goal.get("status") == "active":
                 goal["check_ins"] = goal.get("check_ins", 0) + 1

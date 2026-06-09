@@ -16,13 +16,13 @@ class AnomalyDetector:
         self._latencies: deque[float] = deque(maxlen=window_size)
         self._confirmations: deque[dict] = deque(maxlen=100)
 
-    def record_error(self):
+    def record_error(self) -> None:
         self._error_timestamps.append(datetime.now())
 
-    def record_latency(self, ms: float):
+    def record_latency(self, ms: float) -> None:
         self._latencies.append(ms)
 
-    def record_confirmation(self, action: str, approved: bool):
+    def record_confirmation(self, action: str, approved: bool) -> None:
         self._confirmations.append({
             "timestamp": datetime.now().isoformat(),
             "action": action,

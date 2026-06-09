@@ -35,7 +35,7 @@ class AutobiographicalMemory:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._mem_path, "w", encoding="utf-8") as f:
             json.dump(self._memories[-500:], f, ensure_ascii=False, indent=2)
 
@@ -49,7 +49,7 @@ class AutobiographicalMemory:
         primary = max(scores, key=scores.get) if scores else "neutral"
         return {"primary": primary, "scores": dict(scores), "intensity": sum(scores.values())}
 
-    def record_interaction(self, text: str, response: str, command: str = ""):
+    def record_interaction(self, text: str, response: str, command: str = "") -> None:
         emotion = self._detect_emotion(text)
         memory = {
             "id": f"mem_{len(self._memories)}",

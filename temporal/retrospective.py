@@ -28,7 +28,7 @@ class RetrospectiveAnalyzer:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._reports_path, "w", encoding="utf-8") as f:
             json.dump(self._reports[-50:], f, ensure_ascii=False, indent=2)
 

@@ -30,7 +30,7 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "ARG"]
 ignore = ["E501", "SIM102", "SIM105", "B018", "N802", "ARG002", "ARG005", "SIM112", "F401"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ARG001"]
+"tests/*" = ["ARG001", "E701", "E702", "I001", "E402", "E741", "N802", "N803", "N806", "N815", "N816"]
 "ui/dashboard.py" = ["I001"]
 "run_exe.py" = ["I001"]
 

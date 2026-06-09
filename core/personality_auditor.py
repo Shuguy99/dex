@@ -24,7 +24,7 @@ class PersonalityAuditor:
         self._data_dir.mkdir(parents=True, exist_ok=True)
         self._history_path = self._data_dir / "personality_drift.json"
         self._history = self._load_history()
-        self._current_week = []
+        self._current_week: list[dict] = []
         self._last_audit = self._history.get("last_audit", 0)
 
     def _load_history(self) -> dict:
@@ -35,11 +35,11 @@ class PersonalityAuditor:
                 pass
         return {"audits": [], "last_audit": 0, "baseline": {}}
 
-    def _save_history(self):
+    def _save_history(self) -> None:
         self._history["last_audit"] = time.time()
         self._history_path.write_text(json.dumps(self._history, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def record_interaction(self, command: str, response: str, error: bool = False):
+    def record_interaction(self, command: str, response: str, error: bool = False) -> None:
         self._current_week.append({
             "ts": time.time(),
             "cmd_len": len(command),

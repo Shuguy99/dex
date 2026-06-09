@@ -24,12 +24,12 @@ class CounterfactualAnalyzer:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._forks_path, "w", encoding="utf-8") as f:
             json.dump(self._forks[-200:], f, ensure_ascii=False, indent=2)
 
     def save_fork(self, decision: str, chosen: str, alternative: str,
-                   context: dict[str, Any] | None = None):
+                   context: dict[str, Any] | None = None) -> None:
         fork = {
             "id": f"fork_{len(self._forks)}",
             "decision": decision,

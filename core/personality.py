@@ -44,7 +44,7 @@ QUESTION_WORDS = {"как", "что", "почему", "зачем", "где", "�
 
 class PersonalityEngine:
     def __init__(self, default_mode: str = "джарвис") -> None:
-        self._mode = MODES.get(default_mode, MODES["джарвис"])
+        self._mode: dict[str, Any] = MODES.get(default_mode, MODES["джарвис"])
         self._mode_name = default_mode
         self._history: list[dict[str, Any]] = []
         self._user_tone_history: list[str] = []
@@ -122,11 +122,11 @@ class PersonalityEngine:
             return self._mode["greeting"]
         return ""
 
-    def add_instruction(self, instruction: str):
+    def add_instruction(self, instruction: str) -> None:
         self._custom_instructions.append(instruction)
         logger.info(f"Personality instruction added: {instruction}")
 
-    def record_interaction(self, user_text: str, dex_response: str):
+    def record_interaction(self, user_text: str, dex_response: str) -> None:
         self._history.append({
             "user": user_text,
             "dex": dex_response,
@@ -138,4 +138,4 @@ class PersonalityEngine:
         return list(MODES.keys())
 
     def tts_rate(self) -> int:
-        return self._mode.get("tts_rate", 180)
+        return int(self._mode.get("tts_rate", 180))

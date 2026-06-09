@@ -27,7 +27,7 @@ class AsyncCommandQueue:
         self._pending: Command | None = None
         self._lock = threading.Lock()
 
-    def start(self, processor: Callable[[str], str]):
+    def start(self, processor: Callable[[str], str]) -> None:
         self._running = True
         self._cancel_event.clear()
         self._thread = threading.Thread(
@@ -36,16 +36,16 @@ class AsyncCommandQueue:
         self._thread.start()
         logger.info("AsyncCommandQueue started")
 
-    def stop(self, timeout: float = 3.0):
+    def stop(self, timeout: float = 3.0) -> None:
         self._running = False
         self._cancel_event.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=timeout)
 
-    def post(self, cmd: Command):
+    def post(self, cmd: Command) -> None:
         self._queue.put(cmd)
 
-    def cancel_current(self):
+    def cancel_current(self) -> None:
         self._cancel_event.set()
         with self._lock:
             self._pending = None
@@ -56,7 +56,7 @@ class AsyncCommandQueue:
     def pending_count(self) -> int:
         return self._queue.qsize()
 
-    def _loop(self, processor: Callable[[str], str]):
+    def _loop(self, processor: Callable[[str], str]) -> None:
         while self._running:
             try:
                 cmd = self._queue.get(timeout=0.5)
@@ -88,12 +88,11 @@ class TimeoutWrapper:
         self.default_timeout = default_timeout
 
     def call(self, fn: Callable, timeout: float | None = None, *args, **kwargs) -> Any:
-        time.time() + (timeout or self.default_timeout)
-        result = [None]
-        error = [None]
+        result: list[Any] = [None]
+        error: list[Exception | None] = [None]
         done = threading.Event()
 
-        def worker():
+        def worker() -> None:
             try:
                 result[0] = fn(*args, **kwargs)
             except Exception as e:
@@ -115,10 +114,10 @@ class GUIScheduler:
     def __init__(self) -> None:
         self._callbacks: queue.Queue[Callable] = queue.Queue()
 
-    def schedule(self, fn: Callable):
+    def schedule(self, fn: Callable) -> None:
         self._callbacks.put(fn)
 
-    def process_pending(self):
+    def process_pending(self) -> None:
         while not self._callbacks.empty():
             try:
                 fn = self._callbacks.get_nowait()

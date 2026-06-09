@@ -48,7 +48,7 @@ class BiasDetector:
         self._history: list[dict[str, Any]] = []
         self._load_history()
 
-    def _load_history(self):
+    def _load_history(self) -> None:
         if self._history_path.exists():
             try:
                 import json
@@ -57,7 +57,7 @@ class BiasDetector:
             except Exception:
                 pass
 
-    def _save_history(self):
+    def _save_history(self) -> None:
         import json
         with open(self._history_path, "w", encoding="utf-8") as f:
             json.dump(self._history[-200:], f, ensure_ascii=False, indent=2)

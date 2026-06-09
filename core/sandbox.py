@@ -25,11 +25,11 @@ class FileSandbox:
         normalized = self._normalize(path)
         return any(normalized.startswith(sys_path) for sys_path in self._system)
 
-    def check_read(self, path: str):
+    def check_read(self, path: str) -> None:
         if not self._is_allowed(path):
             raise SandboxError(f"Read blocked: {path} is outside allowed directories")
 
-    def check_write(self, path: str):
+    def check_write(self, path: str) -> None:
         if not self._is_allowed(path):
             raise SandboxError(f"Write blocked: {path} is outside allowed directories")
 
@@ -51,7 +51,7 @@ class FileSandbox:
         with open(normalized, encoding="utf-8") as f:
             return f.read()
 
-    def write_file(self, path: str, content: str):
+    def write_file(self, path: str, content: str) -> None:
         normalized = self._normalize(path)
         self.check_write(normalized)
         os.makedirs(os.path.dirname(normalized), exist_ok=True)
@@ -59,7 +59,7 @@ class FileSandbox:
             f.write(content)
         logger.info(f"Written: {normalized}")
 
-    def delete_file(self, path: str, confirmed: bool = False):
+    def delete_file(self, path: str, confirmed: bool = False) -> None:
         normalized = self._normalize(path)
         self.check_write(normalized)
         if self._is_system(normalized) and not confirmed:
@@ -67,7 +67,7 @@ class FileSandbox:
         os.remove(normalized)
         logger.info(f"Deleted: {normalized}")
 
-    def move_file(self, src: str, dst: str, confirmed: bool = False):
+    def move_file(self, src: str, dst: str, confirmed: bool = False) -> None:
         src_norm = self._normalize(src)
         dst_norm = self._normalize(dst)
         self.check_read(src_norm)

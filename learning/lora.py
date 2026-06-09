@@ -44,7 +44,7 @@ class LoRATrainer:
             tokenizer = AutoTokenizer.from_pretrained(self._base_model)
             tokenizer.pad_token = tokenizer.eos_token
 
-            def tokenize(batch):
+            def tokenize(batch) -> dict[str, Any]:
                 return tokenizer(batch["text"], truncation=True, padding=True, max_length=512)
 
             tokenized = dataset.map(tokenize, batched=True)

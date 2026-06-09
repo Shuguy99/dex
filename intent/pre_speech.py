@@ -17,11 +17,11 @@ class PreSpeechInterface:
         self._micropattern_history: deque[dict] = deque(maxlen=50)
         self._active = False
 
-    def start_monitoring(self):
+    def start_monitoring(self) -> None:
         self._active = True
         logger.info("Pre-speech monitoring started")
 
-    def stop_monitoring(self):
+    def stop_monitoring(self) -> None:
         self._active = False
         logger.info("Pre-speech monitoring stopped")
 

@@ -31,7 +31,7 @@ class CircadianAdapter:
             "color_temperature": 6500
         }
 
-    def _save_config(self):
+    def _save_config(self) -> None:
         with open(self._config_path, "w", encoding="utf-8") as f:
             json.dump(self._config, f, ensure_ascii=False, indent=2)
 
@@ -122,7 +122,7 @@ class CircadianAdapter:
         return phase.get("notification_mode") in ("silent", "reduced")
 
     def update_sleep_schedule(self, wake_time: str | None = None,
-                               bed_time: str | None = None):
+                               bed_time: str | None = None) -> None:
         if wake_time:
             self._config["wake_time"] = wake_time
         if bed_time:

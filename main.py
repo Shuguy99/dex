@@ -10,7 +10,7 @@ from watchdog.logger import DexLogger
 logger = logging.getLogger("dex")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Dex AI Assistant v3+")
     parser.add_argument("--config", "-c", help="Path to config file")
     parser.add_argument("--voice", "-v", action="store_true", help="Enable voice mode")

@@ -31,11 +31,11 @@ class FaultTolerantCore:
                 pass
         return {"last_active": None, "recovery_count": 0, "state_snapshot": {}}
 
-    def _save_state(self):
+    def _save_state(self) -> None:
         with open(self._state_path, "w", encoding="utf-8") as f:
             json.dump(self._state, f, ensure_ascii=False, indent=2)
 
-    def save_snapshot(self, custom_state: dict[str, Any] | None = None):
+    def save_snapshot(self, custom_state: dict[str, Any] | None = None) -> bool:
         snapshot = custom_state or {}
         if self._state_provider:
             try:
@@ -70,7 +70,7 @@ class FaultTolerantCore:
             "recovery_count": self._state["recovery_count"]
         }
 
-    def enter_reduced_mode(self, reason: str = "Primary unavailable"):
+    def enter_reduced_mode(self, reason: str = "Primary unavailable") -> None:
         self._reduced_mode = True
         entry = {
             "event": "reduced_mode",
@@ -80,7 +80,7 @@ class FaultTolerantCore:
         self._health_log.append(entry)
         logger.warning(f"Entering reduced mode: {reason}")
 
-    def exit_reduced_mode(self):
+    def exit_reduced_mode(self) -> None:
         self._reduced_mode = False
         entry = {
             "event": "full_mode",
@@ -89,7 +89,7 @@ class FaultTolerantCore:
         self._health_log.append(entry)
         logger.info("Exited reduced mode, full functionality restored")
 
-    def record_health(self, status: str, details: str = ""):
+    def record_health(self, status: str, details: str = "") -> None:
         entry = {
             "status": status,
             "details": details[:200],

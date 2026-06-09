@@ -13,7 +13,7 @@ class DexLogger:
         self._command_log: list[dict] = []
         self._command_log_path = self._log_dir / "commands.jsonl"
 
-    def _setup_root_logger(self, level: int):
+    def _setup_root_logger(self, level: int) -> None:
         root = logging.getLogger()
         if root.handlers:
             return
@@ -37,7 +37,7 @@ class DexLogger:
         root.addHandler(console)
 
     def log_command(self, command: str, response: str | None = None,
-                    duration_ms: float | None = None, success: bool = True):
+                    duration_ms: float | None = None, success: bool = True) -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "command": command,

@@ -1,6 +1,7 @@
 import logging
 import tempfile
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("dex.voice_clone")
 
@@ -9,22 +10,22 @@ class VoiceCloner:
     def __init__(self, model_dir: str | None = None) -> None:
         self._model_dir = Path(model_dir) if model_dir else Path("data/xtts")
         self._model_dir.mkdir(parents=True, exist_ok=True)
-        self._model = None
+        self._model: Any = None
 
     @property
     def available(self) -> bool:
         try:
-            import TTS
+            import TTS  # type: ignore[import-not-found]
             return True
         except ImportError:
             return False
 
-    def load_model(self, model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2"):
+    def load_model(self, model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2") -> Any:
         if not self.available:
             logger.warning("XTTS not installed")
             return False
         try:
-            from TTS.api import TTS
+            from TTS.api import TTS  # type: ignore[import-not-found]
             self._model = TTS(model_name, gpu=False)
             logger.info(f"Voice model loaded: {model_name}")
             return True

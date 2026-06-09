@@ -24,7 +24,7 @@ class EmailClient:
     def available(self) -> bool:
         return self._tb_path is not None and Path(self._tb_path).exists()
 
-    def open_compose(self, to: str = "", subject: str = "", body: str = ""):
+    def open_compose(self, to: str = "", subject: str = "", body: str = "") -> None:
         if not self.available:
             logger.warning("Thunderbird not found")
             return False
@@ -37,7 +37,7 @@ class EmailClient:
             logger.error(f"Failed to open compose: {e}")
             return False
 
-    def open_mailto(self, address: str):
+    def open_mailto(self, address: str) -> None:
         if not self.available:
             return False
         try:

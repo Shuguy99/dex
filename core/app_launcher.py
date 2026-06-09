@@ -29,7 +29,7 @@ APP_ALIASES = {
 
 class AppLauncher:
     def __init__(self) -> None:
-        self._blacklisted = set()
+        self._blacklisted: set[str] = set()
 
     def find_executable(self, name: str) -> str | None:
         ext = os.path.splitext(name)[1] or ".exe"
@@ -84,8 +84,8 @@ class AppLauncher:
             logger.error(f"Launch failed: {path}: {e}")
             return False
 
-    def blacklist(self, name: str):
+    def blacklist(self, name: str) -> None:
         self._blacklisted.add(name.lower())
 
-    def whitelist(self, name: str):
+    def whitelist(self, name: str) -> None:
         self._blacklisted.discard(name.lower())

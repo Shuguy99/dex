@@ -26,7 +26,7 @@ class LocalSearchEngine:
         return {"pdfs": [], "screenshots": [], "annotations": [],
                 "documents": [], "last_index": None}
 
-    def _save_index(self):
+    def _save_index(self) -> None:
         with open(self._index_path, "w", encoding="utf-8") as f:
             json.dump(self._index, f, ensure_ascii=False, indent=2)
 
@@ -91,7 +91,7 @@ class LocalSearchEngine:
         return results[:10]
 
     def index_pdf(self, path: str, highlights: list[dict] | None = None,
-                  annotations: list[str] | None = None):
+                  annotations: list[str] | None = None) -> str:
         entry = {
             "path": path,
             "title": Path(path).stem,
@@ -122,7 +122,7 @@ class LocalSearchEngine:
             pass
         return f"(PDF content: {Path(path).name})"
 
-    def index_screenshot(self, path: str, ocr_text: str = ""):
+    def index_screenshot(self, path: str, ocr_text: str = "") -> str:
         entry = {
             "path": path,
             "title": Path(path).stem,

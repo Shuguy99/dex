@@ -20,7 +20,7 @@ class CognitiveLoadAnalyzer:
         self._interaction_log: deque[dict] = deque(maxlen=200)
         self._load_state()
 
-    def _load_state(self):
+    def _load_state(self) -> None:
         if self._path.exists():
             try:
                 with open(self._path, encoding="utf-8") as f:
@@ -30,7 +30,7 @@ class CognitiveLoadAnalyzer:
             except Exception:
                 pass
 
-    def _save_state(self):
+    def _save_state(self) -> None:
         try:
             with open(self._path, "w", encoding="utf-8") as f:
                 json.dump({
@@ -40,13 +40,13 @@ class CognitiveLoadAnalyzer:
         except Exception:
             pass
 
-    def record_typing(self, text: str, elapsed_seconds: float):
+    def record_typing(self, text: str, elapsed_seconds: float) -> None:
         words = len(text.split())
         if words > 0 and elapsed_seconds > 0:
             speed = words / elapsed_seconds
             self._typing_speed.append(speed)
 
-    def record_command(self, command: str, args: str = "", success: bool = True):
+    def record_command(self, command: str, args: str = "", success: bool = True) -> None:
         complexity = self._estimate_complexity(command, args)
         self._command_complexity.append({
             "command": command,
@@ -75,7 +75,8 @@ class CognitiveLoadAnalyzer:
     def get_load_score(self) -> dict[str, Any]:
         recent_commands = list(self._command_complexity)[-20:]
         if not recent_commands:
-            return {"load": "low", "score": 0.0, "recommendation": ""}
+            return {"load": "low", "score": 0.0, "recommendation": "",
+                    "commands_analyzed": 0, "avg_complexity": 0.0, "error_rate": 0.0}
 
         avg_complexity = sum(c["complexity"] for c in recent_commands) / len(recent_commands)
         error_rate = sum(1 for c in recent_commands if not c["success"]) / max(len(recent_commands), 1)

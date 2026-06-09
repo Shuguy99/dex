@@ -31,7 +31,7 @@ class Microphone:
         except Exception:
             return False
 
-    def start(self, on_audio: Callable[[bytes], None] | None = None):
+    def start(self, on_audio: Callable[[bytes], None] | None = None) -> None:
         if self._privacy_mode:
             logger.warning("Microphone blocked by privacy mode")
             return False
@@ -56,7 +56,7 @@ class Microphone:
             logger.error(f"Microphone start failed: {e}")
             return False
 
-    def stop(self):
+    def stop(self) -> None:
         self._active = False
         if self._stream:
             self._stream.stop_stream()
@@ -66,26 +66,26 @@ class Microphone:
         self._show_indicator(False)
         logger.info(f"Microphone stopped {INDICATOR_OFF}")
 
-    def _audio_callback(self, in_data, frame_count, time_info, status):
+    def _audio_callback(self, in_data, frame_count, time_info, status) -> None:
         if self._on_audio:
             self._on_audio(in_data)
         return (None, 0)
 
-    def _show_indicator(self, on: bool):
+    def _show_indicator(self, on: bool) -> None:
         try:
             char = INDICATOR_ON if on else INDICATOR_OFF
             print(f"\rMicrophone: {char}", end="", flush=True)
         except Exception:
             pass
 
-    def enable_privacy_mode(self):
+    def enable_privacy_mode(self) -> None:
         self._privacy_mode = True
         self.stop()
 
-    def disable_privacy_mode(self):
+    def disable_privacy_mode(self) -> None:
         self._privacy_mode = False
 
-    def toggle_privacy_mode(self):
+    def toggle_privacy_mode(self) -> None:
         if self._privacy_mode:
             self.disable_privacy_mode()
         else:

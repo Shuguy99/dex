@@ -11,8 +11,8 @@ class ModelCache:
         self._max_loaded = max_loaded
         self._ttl = ttl
         self._lock = threading.Lock()
-        self._models = OrderedDict()
-        self._last_use = {}
+        self._models: OrderedDict[str, object] = OrderedDict()
+        self._last_use: dict[str, float] = {}
 
     def acquire(self, model_name: str) -> bool:
         with self._lock:
@@ -28,14 +28,14 @@ class ModelCache:
             logger.info(f"Model loaded: {model_name} ({len(self._models)}/{self._max_loaded})")
             return False
 
-    def release(self, model_name: str):
+    def release(self, model_name: str) -> None:
         with self._lock:
             if model_name in self._models:
                 del self._models[model_name]
                 self._last_use.pop(model_name, None)
                 logger.info(f"Model unloaded: {model_name} ({len(self._models)}/{self._max_loaded})")
 
-    def mark_loaded(self, model_name: str, handle: object):
+    def mark_loaded(self, model_name: str, handle: object) -> None:
         with self._lock:
             self._models[model_name] = handle
             self._last_use[model_name] = time.time()
@@ -47,7 +47,7 @@ class ModelCache:
                 self._last_use[model_name] = time.time()
             return handle
 
-    def _evict_one(self):
+    def _evict_one(self) -> None:
         oldest = None
         oldest_time = float("inf")
         now = time.time()
@@ -70,7 +70,7 @@ class ModelCache:
     def loaded_models(self) -> list[str]:
         return list(self._models.keys())
 
-    def unload_all(self):
+    def unload_all(self) -> None:
         with self._lock:
             self._models.clear()
             self._last_use.clear()

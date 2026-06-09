@@ -8,10 +8,10 @@ class PrivacyManager:
         self._active = False
         self._components: dict[str, object] = {}
 
-    def register(self, name: str, component):
+    def register(self, name: str, component) -> None:
         self._components[name] = component
 
-    def enable(self):
+    def enable(self) -> None:
         self._active = True
         for name, comp in self._components.items():
             if hasattr(comp, "enable_privacy_mode"):
@@ -19,7 +19,7 @@ class PrivacyManager:
                 logger.info(f"Privacy: disabled {name}")
         logger.info("Privacy mode ON")
 
-    def disable(self):
+    def disable(self) -> None:
         self._active = False
         for name, comp in self._components.items():
             if hasattr(comp, "disable_privacy_mode"):
@@ -31,7 +31,7 @@ class PrivacyManager:
     def is_active(self) -> bool:
         return self._active
 
-    def toggle(self):
+    def toggle(self) -> None:
         if self._active:
             self.disable()
         else:

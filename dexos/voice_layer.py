@@ -35,7 +35,7 @@ class VoiceLayer:
         except Exception:
             return False
 
-    def send_keys(self, keys: str):
+    def send_keys(self, keys: str) -> None:
         try:
             import platform
             if platform.system() == "Windows":

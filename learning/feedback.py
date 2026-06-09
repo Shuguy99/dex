@@ -30,7 +30,7 @@ class FeedbackCollector:
             pass
         return None
 
-    def _record(self, action: str, rating: int):
+    def _record(self, action: str, rating: int) -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "action": action,
@@ -59,7 +59,7 @@ class FeedbackCollector:
     def low_rated_actions(self, threshold: int = 2) -> list[dict[str, Any]]:
         return [r for r in self._ratings if r["rating"] <= threshold]
 
-    def load_history(self):
+    def load_history(self) -> list[dict[str, Any]]:
         if self._path.exists():
             with open(self._path, encoding="utf-8") as f:
                 for line in f:

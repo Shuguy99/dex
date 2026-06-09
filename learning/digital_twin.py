@@ -35,13 +35,13 @@ class DigitalTwin:
             "thinking_patterns": []
         }
 
-    def _save_profile(self):
+    def _save_profile(self) -> None:
         self._style_path.write_text(
             json.dumps(self._profile, ensure_ascii=False, indent=2),
             encoding="utf-8"
         )
 
-    def learn_from_message(self, text: str, context: str = ""):
+    def learn_from_message(self, text: str, context: str = "") -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "text": text,
@@ -65,7 +65,7 @@ class DigitalTwin:
 
         self._save_profile()
 
-    def _update_style_profile(self):
+    def _update_style_profile(self) -> None:
         recent = self._get_recent_messages(20)
         if not recent or not self._llm:
             return

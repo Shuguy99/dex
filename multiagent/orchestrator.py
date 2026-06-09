@@ -23,19 +23,19 @@ class Agent:
         self._running = False
         self._thread: threading.Thread | None = None
 
-    def start(self):
+    def start(self) -> None:
         self._running = True
         self.active = True
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
         logger.info(f"Agent {self.id} started")
 
-    def stop(self):
+    def stop(self) -> None:
         self._running = False
         self.active = False
         logger.info(f"Agent {self.id} stopped")
 
-    def _run_loop(self):
+    def _run_loop(self) -> None:
         while self._running:
             self.last_heartbeat = time.time()
             time.sleep(5)
@@ -66,13 +66,13 @@ class Orchestrator:
         self._task_queue: list[dict[str, Any]] = []
         self._lock = threading.Lock()
 
-    def register_agent(self, agent: Agent):
+    def register_agent(self, agent: Agent) -> None:
         with self._lock:
             self._agents[agent.id] = agent
             self._save_agent_meta(agent)
         logger.info(f"Registered agent: {agent.id} ({agent.type})")
 
-    def unregister_agent(self, agent_id: str):
+    def unregister_agent(self, agent_id: str) -> None:
         with self._lock:
             if agent_id in self._agents:
                 self._agents[agent_id].stop()
@@ -126,12 +126,12 @@ class Orchestrator:
                 report["failing_agents"].append(agent_id)
         return report
 
-    def _save_agent_meta(self, agent: Agent):
+    def _save_agent_meta(self, agent: Agent) -> None:
         path = self._agents_dir / f"{agent.id}.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(agent.to_dict(), f, ensure_ascii=False, indent=2)
 
-    def load_agents(self):
+    def load_agents(self) -> list[dict[str, Any]]:
         for f_path in self._agents_dir.glob("*.json"):
             try:
                 with open(f_path, encoding="utf-8") as f:

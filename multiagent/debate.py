@@ -141,7 +141,7 @@ class AgentDebate:
             lines.append(f"  {h['speaker']}: {h['argument'][:200]}")
         return "\n".join(lines)
 
-    def _save_debate(self, result: dict[str, Any]):
+    def _save_debate(self, result: dict[str, Any]) -> None:
         path = Path("data/debates")
         path.mkdir(parents=True, exist_ok=True)
         safe = "".join(c if c.isalnum() else "_" for c in result["topic"][:20])

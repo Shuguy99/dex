@@ -12,7 +12,7 @@ class CalendarClient:
         self._ical_path = Path(ical_path) if ical_path else None
         self._events: list[dict[str, Any]] = []
 
-    def load_ical(self, path: str | Path | None = None):
+    def load_ical(self, path: str | Path | None = None) -> list[dict[str, Any]]:
         p = Path(path) if path else self._ical_path
         if not p or not p.exists():
             logger.warning("No iCal file found")
@@ -37,7 +37,7 @@ class CalendarClient:
         except Exception as e:
             logger.error(f"Failed to load iCal: {e}")
 
-    def _load_raw_ical(self, path: Path):
+    def _load_raw_ical(self, path: Path) -> list[dict[str, Any]]:
         try:
             text = path.read_text(encoding="utf-8")
             for block in text.split("BEGIN:VEVENT"):

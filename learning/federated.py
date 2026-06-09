@@ -26,13 +26,13 @@ class FederatedLearning:
         base = socket.gethostname() + str(random.randint(1000, 9999))
         return hashlib.sha256(base.encode()).hexdigest()[:16]
 
-    def _load_peers(self):
+    def _load_peers(self) -> None:
         path = self._data_dir / "peers.json"
         if path.exists():
             with open(path, encoding="utf-8") as f:
                 self._peers = json.load(f)
 
-    def _save_peers(self):
+    def _save_peers(self) -> None:
         with open(self._data_dir / "peers.json", "w", encoding="utf-8") as f:
             json.dump(self._peers, f, ensure_ascii=False, indent=2)
 
@@ -69,7 +69,7 @@ class FederatedLearning:
                 logger.error(f"Failed to read lesson {f_path}: {e}")
         return lessons
 
-    def add_peer(self, address: str, public_key: str | None = None):
+    def add_peer(self, address: str, public_key: str | None = None) -> None:
         peer = {
             "address": address,
             "added": datetime.now().isoformat(),

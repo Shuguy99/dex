@@ -45,7 +45,7 @@ class ContextualDesktop:
                 pass
         return {"active_dashboard": "morning", "custom_widgets": []}
 
-    def _save_config(self):
+    def _save_config(self) -> None:
         with open(self._config_path, "w", encoding="utf-8") as f:
             json.dump(self._config, f, ensure_ascii=False, indent=2)
 
@@ -110,7 +110,7 @@ class ContextualDesktop:
 
         return self.get_dashboard()
 
-    def add_widget(self, widget_name: str):
+    def add_widget(self, widget_name: str) -> None:
         if widget_name not in self._config["custom_widgets"]:
             self._config["custom_widgets"].append(widget_name)
             self._save_config()

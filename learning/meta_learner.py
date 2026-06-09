@@ -37,11 +37,11 @@ class MetaLearner:
             "synthetic_scenarios": [], "skill_progress": {}
         }
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._path, "w", encoding="utf-8") as f:
             json.dump(self._meta_knowledge, f, ensure_ascii=False, indent=2)
 
-    def record_error(self, error_type: str, context: str, severity: str = "medium"):
+    def record_error(self, error_type: str, context: str, severity: str = "medium") -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "type": error_type,
@@ -90,7 +90,7 @@ class MetaLearner:
             "reason": f"Best for '{error_type}' (freq={error_freq}, score={scores.get(strategy, 0.5):.2f})"
         }
 
-    def record_strategy_outcome(self, strategy: str, success: bool, improvement: float = 0.0):
+    def record_strategy_outcome(self, strategy: str, success: bool, improvement: float = 0.0) -> None:
         scores = self._meta_knowledge["strategy_scores"]
         current = scores.get(strategy, 0.5)
         delta = 0.05 if success else -0.05

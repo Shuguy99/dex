@@ -29,7 +29,7 @@ class JITCompiler:
                 pass
         return {}
 
-    def _save_registry(self):
+    def _save_registry(self) -> None:
         with open(self._registry_path, "w", encoding="utf-8") as f:
             json.dump(self._registry, f, ensure_ascii=False, indent=2)
 
@@ -124,7 +124,7 @@ class JITCompiler:
         except Exception as e:
             return {"passed": False, "error": str(e), "output": ""}
 
-    def _register_as_plugin(self, agent_id: str, description: str, script: str):
+    def _register_as_plugin(self, agent_id: str, description: str, script: str) -> None:
         if not self._plugin_system:
             return
         plugin_manifest = {

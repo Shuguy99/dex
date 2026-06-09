@@ -105,7 +105,7 @@ class FederatedConsciousness:
 
         return {"success": False, "reason": "LLM unavailable"}
 
-    def _save_sessions(self):
+    def _save_sessions(self) -> None:
         with open(self._pool_path, "w", encoding="utf-8") as f:
             json.dump(self._sessions, f, ensure_ascii=False, indent=2)
 

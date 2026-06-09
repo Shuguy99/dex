@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+*.spec
+
+# Virtual environment
+.venv/
+venv/
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+.gigacode/
+
+# Project data
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test models
+test_models/
+
+# Docker
+.dockerignore
+
+# Aider
+.aider*
+
+# Coverage
+.coverage
+
+# Models
+Modelfile
+model_keys.json

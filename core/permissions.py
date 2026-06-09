@@ -32,7 +32,7 @@ class PermissionManager:
         logger.warning("Action denied by user")
         return False
 
-    def set_password(self, password: str):
+    def set_password(self, password: str) -> None:
         self._password_hash = str(hash(password))
 
     def _verify_password(self, password: str) -> bool:
@@ -47,7 +47,7 @@ class PermissionManager:
         except Exception:
             return False
 
-    def ensure_non_admin(self):
+    def ensure_non_admin(self) -> None:
         if self.is_admin():
             logger.warning("Running as admin - this is not recommended")
             self._voice.say("Предупреждение: ассистент запущен с правами администратора")

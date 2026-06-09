@@ -29,17 +29,17 @@ class WatchdogMonitor:
         self._crash_count = 0
         self._anomaly_flag = False
 
-    def start(self):
+    def start(self) -> None:
         self._active = True
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
         logger.info(f"Watchdog started monitoring PID {self._target_pid}")
 
-    def stop(self):
+    def stop(self) -> None:
         self._active = False
         logger.info("Watchdog stopped")
 
-    def log_error(self, source: str, message: str, details: str = ""):
+    def log_error(self, source: str, message: str, details: str = "") -> None:
         entry = {
             "timestamp": datetime.now().isoformat(),
             "source": source,
@@ -49,10 +49,10 @@ class WatchdogMonitor:
         self._error_log.append(entry)
         self._dump_recent()
 
-    def log_latency(self, ms: float):
+    def log_latency(self, ms: float) -> None:
         self._latency_log.append(ms)
 
-    def log_confirmation(self, action: str, approved: bool):
+    def log_confirmation(self, action: str, approved: bool) -> None:
         self._confirmation_log.append({
             "timestamp": datetime.now().isoformat(),
             "action": action,
@@ -77,7 +77,7 @@ class WatchdogMonitor:
 
         return issues
 
-    def _run(self):
+    def _run(self) -> None:
         import psutil
         while self._active:
             try:
@@ -106,7 +106,7 @@ class WatchdogMonitor:
 
             time.sleep(self._interval)
 
-    def _dump_crash(self):
+    def _dump_crash(self) -> None:
         dump = {
             "timestamp": datetime.now().isoformat(),
             "pid": self._target_pid,
@@ -120,7 +120,7 @@ class WatchdogMonitor:
             json.dump(dump, f, ensure_ascii=False, indent=2)
         logger.critical(f"Crash dump written: {path}")
 
-    def _dump_recent(self):
+    def _dump_recent(self) -> None:
         dump = {
             "timestamp": datetime.now().isoformat(),
             "recent_errors": list(self._error_log)[-10:]
@@ -129,7 +129,7 @@ class WatchdogMonitor:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(dump, f, ensure_ascii=False, indent=2)
 
-    def _write_anomaly_report(self, issues: list[str]):
+    def _write_anomaly_report(self, issues: list[str]) -> None:
         report = {
             "timestamp": datetime.now().isoformat(),
             "issues": issues,
@@ -148,5 +148,5 @@ class WatchdogMonitor:
     def has_anomaly(self) -> bool:
         return self._anomaly_flag
 
-    def clear_anomaly_flag(self):
+    def clear_anomaly_flag(self) -> None:
         self._anomaly_flag = False

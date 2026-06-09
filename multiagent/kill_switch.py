@@ -21,10 +21,10 @@ class KillSwitch:
     def immutable(self) -> bool:
         return _IMMUTABLE
 
-    def register(self, callback: Callable):
+    def register(self, callback: Callable) -> None:
         self._on_kill.append(callback)
 
-    def trigger(self):
+    def trigger(self) -> None:
         if self._triggered:
             return
         self._triggered = True
@@ -48,6 +48,6 @@ class KillSwitch:
     def is_triggered(self) -> bool:
         return self._triggered
 
-    def reset(self):
+    def reset(self) -> None:
         self._triggered = False
         logger.info("Kill switch reset")

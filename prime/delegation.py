@@ -25,7 +25,7 @@ class DelegationEngine:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._deployments_path, "w", encoding="utf-8") as f:
             json.dump(self._delegations[-50:], f, ensure_ascii=False, indent=2)
 
@@ -55,7 +55,7 @@ class DelegationEngine:
         logger.info(f"Sub-personality '{name}' deployed to {target_device}")
         return deployment
 
-    def log_experience(self, dep_id: str, entry: str):
+    def log_experience(self, dep_id: str, entry: str) -> None:
         dep = next((d for d in self._delegations if d["id"] == dep_id), None)
         if not dep:
             return False

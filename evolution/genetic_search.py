@@ -40,7 +40,7 @@ class GeneticArchitectureSearch:
                 pass
         return []
 
-    def _save_population(self):
+    def _save_population(self) -> None:
         with open(self._pop_path, "w", encoding="utf-8") as f:
             json.dump(self._population[-100:], f, ensure_ascii=False, indent=2)
 
@@ -104,7 +104,7 @@ class GeneticArchitectureSearch:
 
         return base
 
-    def seed_population(self, size: int = 10):
+    def seed_population(self, size: int = 10) -> None:
         self._population = []
         for _ in range(size):
             genome = self._random_genome()

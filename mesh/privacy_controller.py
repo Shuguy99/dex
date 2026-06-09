@@ -23,7 +23,7 @@ class MeshPrivacyController:
                 pass
         return {"devices": {}, "default_level": "local_process"}
 
-    def _save_policies(self):
+    def _save_policies(self) -> None:
         with open(self._policy_path, "w", encoding="utf-8") as f:
             json.dump(self._policies, f, ensure_ascii=False, indent=2)
 
@@ -46,7 +46,7 @@ class MeshPrivacyController:
         }
     }
 
-    def set_device_policy(self, device_id: str, data_type: str, level: str):
+    def set_device_policy(self, device_id: str, data_type: str, level: str) -> None:
         if level not in self.DATA_LEVELS:
             return False
         if device_id not in self._policies["devices"]:

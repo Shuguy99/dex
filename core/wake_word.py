@@ -3,6 +3,7 @@ import os
 import re
 import threading
 from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger("dex.wake_word")
 
@@ -13,12 +14,12 @@ class WakeWordDetector:
         self._on_wake: Callable | None = None
         self._active = False
         self._thread: threading.Thread | None = None
-        self._porcupine = None
+        self._porcupine: Any = None
 
     @property
     def available(self) -> bool:
         try:
-            import pvporcupine
+            import pvporcupine  # type: ignore[import-untyped]
             pvporcupine.KEYWORDS
             return True
         except Exception:
@@ -59,10 +60,10 @@ class WakeWordDetector:
             self._porcupine.delete()
         logger.info("Wake word detector stopped")
 
-    def _porcupine_loop(self):
+    def _porcupine_loop(self) -> None:
         import struct
 
-        import pyaudio
+        import pyaudio  # type: ignore[import-untyped]
         pa = pyaudio.PyAudio()
         stream = pa.open(
             rate=self._porcupine.sample_rate,
@@ -80,8 +81,8 @@ class WakeWordDetector:
         stream.close()
         pa.terminate()
 
-    def _text_fallback_loop(self):
-        import speech_recognition as sr
+    def _text_fallback_loop(self) -> None:
+        import speech_recognition as sr  # type: ignore[import-untyped]
         r = sr.Recognizer()
         with sr.Microphone() as source:
             r.adjust_for_ambient_noise(source, duration=0.5)

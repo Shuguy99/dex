@@ -13,7 +13,7 @@ class VectorMemory:
         self._embedder = None
         self._initialized = False
 
-    def initialize(self):
+    def initialize(self) -> bool:
         try:
             import chromadb
             from chromadb.config import Settings
@@ -31,7 +31,7 @@ class VectorMemory:
             logger.error(f"Failed to initialize ChromaDB: {e}")
             self._initialized = False
 
-    def _init_embedder(self):
+    def _init_embedder(self) -> None:
         try:
             from sentence_transformers import SentenceTransformer
             self._embedder = SentenceTransformer("cointegrated/rubert-tiny2")
@@ -51,7 +51,7 @@ class VectorMemory:
         return self._initialized and self._collection is not None
 
     def add(self, text: str, metadata: dict[str, Any] | None = None,
-            doc_id: str | None = None):
+            doc_id: str | None = None) -> str:
         if not self.ready:
             logger.warning("Vector store not ready, cannot add")
             return
@@ -97,7 +97,7 @@ class VectorMemory:
             })
         return items
 
-    def delete(self, doc_id: str):
+    def delete(self, doc_id: str) -> bool:
         if self.ready:
             self._collection.delete(ids=[doc_id])
 

@@ -19,7 +19,7 @@ class RuleEngine:
         self._harmful_rules: set[str] = set()
         self._load_rules()
 
-    def _load_rules(self):
+    def _load_rules(self) -> None:
         path = self._rules_dir / "rules.json"
         if path.exists():
             with open(path, encoding="utf-8") as f:
@@ -28,7 +28,7 @@ class RuleEngine:
                 self._harmful_rules = set(data.get("harmful", []))
             logger.info(f"Loaded {len(self._rules)} rules, {len(self._harmful_rules)} harmful")
 
-    def _save_rules(self):
+    def _save_rules(self) -> None:
         path = self._rules_dir / "rules.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump({
@@ -88,7 +88,7 @@ class RuleEngine:
             return case.get("expected_output") == expected
         return True
 
-    def mark_harmful(self, rule_id: str):
+    def mark_harmful(self, rule_id: str) -> None:
         self._harmful_rules.add(rule_id)
         rule = self._get_rule(rule_id)
         if rule:

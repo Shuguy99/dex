@@ -22,18 +22,18 @@ class GestureController:
         except ImportError:
             return False
 
-    def register(self, gesture_name: str, callback: Callable):
+    def register(self, gesture_name: str, callback: Callable) -> None:
         self._on_gesture[gesture_name] = callback
         logger.info(f"Gesture registered: {gesture_name}")
 
-    def start(self):
+    def start(self) -> None:
         if not self.available:
             logger.warning("Gesture control requires cv2 + mediapipe")
             return
         self._active = True
         logger.info("Gesture controller started")
 
-    def stop(self):
+    def stop(self) -> None:
         self._active = False
         logger.info("Gesture controller stopped")
 

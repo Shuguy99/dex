@@ -87,7 +87,7 @@ class MatrixClient:
             return [{"room_id": r} for r in result["joined_rooms"]]
         return []
 
-    def logout(self):
+    def logout(self) -> None:
         if self._token:
             self._api("POST", "logout")
             self._token = None

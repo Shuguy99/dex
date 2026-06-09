@@ -24,7 +24,7 @@ class MetaArchitect:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._path, "w", encoding="utf-8") as f:
             json.dump(self._proposals[-50:], f, ensure_ascii=False, indent=2)
 

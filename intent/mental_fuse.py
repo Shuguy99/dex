@@ -74,7 +74,7 @@ class MentalFuse:
             "requires_confirmation": blocked
         }
 
-    def _save_log(self, entry: dict):
+    def _save_log(self, entry: dict) -> None:
         import json
         try:
             with open(self._log_path, "a", encoding="utf-8") as f:

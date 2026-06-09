@@ -1,9 +1,10 @@
 import logging
 import threading
 import time
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from config import CONFIG
 from core.app_launcher import AppLauncher
@@ -251,9 +252,12 @@ class DexAssistant:
         self.diagnostics = ThreadDiagnostics()
         self._ready = threading.Event()
 
-        self._command_handlers = {}
+        self._command_handlers: dict[str, Callable[..., str]] = {}
         self._initialized = False
         self._feedback_mode = False
+        self._conversation_history: list[dict[str, str]] = []
+        self._conversation_max = 50
+        self._pending_task: dict[str, Any] | None = None
 
     def initialize(self) -> None:
         logger.info(f"{CONFIG.APP_NAME} v{CONFIG.VERSION} initializing...")
@@ -287,6 +291,7 @@ class DexAssistant:
 
         # Commands
         self._register_builtin_commands()
+        self._register_plugin_commands()
 
         # Async command queue
         self.cmd_queue.start(processor=self.process_command)
@@ -296,7 +301,7 @@ class DexAssistant:
         logger.info(f"{CONFIG.APP_NAME} ready. Uptime: {self.uptime}")
 
     def init_llm_background(self, callback: Callable[[bool], None] | None = None) -> None:
-        def _load():
+        def _load() -> None:
             logger.info("Background LLM init starting...")
             try:
                 self.timeout.call(self.llm.check_available, timeout=15)
@@ -433,47 +438,68 @@ class DexAssistant:
         }
         self._command_handlers = cmds
 
+        # Plugin management command
+        cmds["плагин"] = self._cmd_plugin
+        self._command_handlers = cmds
+
+    def _register_plugin_commands(self) -> None:
+        for prefix, _plugin_name in self.plugins.get_command_prefixes().items():
+            if prefix not in self._command_handlers:
+                self._command_handlers[prefix] = self._make_plugin_handler(prefix)
+
+    def _make_plugin_handler(self, prefix: str) -> Callable[[str], str]:
+        def handler(args: str) -> str:
+            full_text = f"{prefix} {args}".strip() if args else prefix
+            result = self.plugins.execute(full_text)
+            if result is not None:
+                return result
+            return f"Плагин '{prefix}' не обработал команду"
+        return handler
+
     def process_command(self, text: str) -> str:
-        text = text.lower().strip()
+        text = text.strip()
         logger.info(f"Command: {text}")
 
         start = time.time()
 
-        # Tiered inference: nano-LLM / rule-based path for simple commands
+        # 1. Kill switch
+        if self.kill_switch.check_and_trigger(text):
+            return "Стоп-код активирован. Все процессы заморожены."
+
+        # 2. Privacy mode
+        if self.privacy.is_active and "приватный режим" not in text.lower():
+            return "Приватный режим активен. Команды не выполняются."
+
+        # 3. Tiered inference for simple responses
         if CONFIG.TIERED_INFERENCE_ENABLED:
             routing = route_command(text, use_small_model=CONFIG.TIERED_USE_SMALL_MODEL)
             if routing["simple_response"] is not None:
                 result = routing["simple_response"]
-                elapsed = (time.time() - start) * 1000
-                self.dex_logger.log_command(text, result, elapsed)
-                self._post_command_hooks(text, result, text.split()[0] if text else "")
+                self._post_process(text, result, routing.get("action", ""), start)
                 return result
 
-        if self.kill_switch.check_and_trigger(text):
-            return "Стоп-код активирован. Все процессы заморожены."
-
-        if self.privacy.is_active and "приватный режим" not in text:
-            return "Приватный режим активен. Команды не выполняются."
-
+        # 4. Structured command matching (try all registered handlers)
+        text_lower = text.lower()
         for prefix, handler in sorted(self._command_handlers.items(),
                                       key=lambda x: -len(x[0])):
-            if text.startswith(prefix):
+            if text_lower.startswith(prefix):
                 args = text[len(prefix):].strip()
                 can_proceed, reasons = self.constitution.can_proceed(prefix, {"args": args})
                 if not can_proceed:
                     return "⛔ Действие заблокировано конституцией:\n" + "\n".join(reasons)
                 result = handler(args)
-                elapsed = (time.time() - start) * 1000
-                self.dex_logger.log_command(text, result, elapsed)
-                self.anomaly.record_latency(elapsed)
-                self._collect_feedback(prefix, result)
-                self._post_command_hooks(text, result, prefix)
+                self._post_process(text, result, prefix, start)
                 return result
 
-        elapsed = (time.time() - start) * 1000
-        self.dex_logger.log_command(text, "Unknown command", elapsed, success=False)
-        self.anomaly.record_error()
-        return self._handle_unknown(text)
+        # 5. Mental fuse check for destructive patterns
+        mental = self.mental_fuse.check(text)
+        if mental.get("blocked"):
+            return f"⛔ {mental.get('reason', 'Действие заблокировано')}"
+
+        # 6. Natural conversation via LLM (PRIMARY PATH)
+        result = self._conversational_respond(text)
+        self._post_process(text, result, "llm", start)
+        return result
 
     def _execute_step(self, action: str, params: dict[str, Any]) -> str:
         action_map = {
@@ -678,31 +704,96 @@ class DexAssistant:
             "  ❓ помощь — эта справка"
         )
 
-    def _handle_unknown(self, text: str) -> str:
-        if self.llm.ready:
-            prompt = (
-                f"Пользователь сказал: '{text}'\n\n"
-                f"Ты — Dex, голосовой ассистент. Ответь на русском, "
-                f"объясни, что ты не понимаешь команду, "
-                f"и предложи варианты из списка: "
-                f"открыть файл, запустить приложение, "
-                f"что-то запомнить, найти в документации, "
-                f"спланировать задачу, исследовать тему, "
-                f"провести дебаты.\n\n"
-                f"{self.personality.system_prompt}"
-            )
-            return self.llm.generate(prompt, temperature=0.5)
+    def _conversational_respond(self, text: str) -> str:
+        """Handle natural conversation via LLM with full context and personality."""
+        # Store user message
+        self._conversation_history.append({"role": "user", "content": text})
+        # Trim history
+        if len(self._conversation_history) > self._conversation_max * 2:
+            self._conversation_history = self._conversation_history[-self._conversation_max * 2:]
 
-        rules = self.rule_engine.get_active_rules()
-        for rule in rules:
-            pattern = rule.get("pattern", "")
-            if not pattern:
-                continue
-            import re
-            if re.search(pattern, text, re.IGNORECASE):
-                action = rule.get("expected_action", "")
-                return f"Согласно правилу: {action}"
-        return "Простите, сэр, я не понимаю эту команду"
+        # Check if LLM is ready
+        if not self.llm.ready:
+            # Fallback to rules
+            for rule in self.rule_engine.get_active_rules():
+                pattern = rule.get("pattern", "")
+                if pattern:
+                    import re
+                    if re.search(pattern, text, re.IGNORECASE):
+                        action = rule.get("expected_action", "")
+                        result = f"Согласно правилу: {action}"
+                        self._conversation_history.append({"role": "assistant", "content": result})
+                        return result
+            result = "Простите, сэр, я не понимаю эту команду"
+            self._conversation_history.append({"role": "assistant", "content": result})
+            return result
+
+        # Check memory for relevant context
+        memory_context = ""
+        try:
+            results = self.vector_memory.search(text, n_results=3)
+            if results and isinstance(results, dict) and results.get("documents"):
+                docs = [d for d in results["documents"][0] if d][:2]
+                if docs:
+                    memory_context = "\nRelevant context:\n" + "\n".join(docs)
+        except Exception:
+            pass
+
+        # Check circadian energy level
+        energy = self.circadian.get_current_phase() if hasattr(self, 'circadian') else "medium"
+
+        # Check cognitive load
+        load_info = ""
+        if hasattr(self, 'cognitive_load'):
+            load_data = self.cognitive_load.get_load_score()
+            if load_data.get("score", 0) > 0.7:
+                load_info = "\n[User appears busy or stressed — keep response concise]"
+
+        # Build system prompt with personality
+        system_prompt = (
+            f"Ты — Dex, голосовой ассистент. "
+            f"Текущий режим: {self.personality.current_mode}. "
+            f"Энергия пользователя: {energy}.{load_info}"
+            f"{memory_context}"
+            f"\n\nОтвечай на русском, кратко и по делу. "
+            f"Если пользователь просит что-то сделать — скажи, что умеешь: "
+            f"открывать файлы, запускать приложения, запоминать, искать, "
+            f"планировать задачи, исследовать темы, проводить дебаты."
+        )
+
+        try:
+            response = self.llm.chat(
+                messages=[{"role": "system", "content": system_prompt}] +
+                         self._conversation_history[-12:],
+                temperature=0.7,
+            )
+            result = response.strip()
+        except Exception as e:
+            logger.error(f"LLM conversation error: {e}")
+            result = "Простите, сэр, произошла ошибка. Попробуйте ещё раз."
+
+        # Store assistant response
+        self._conversation_history.append({"role": "assistant", "content": result})
+
+        # Auto-learn from interaction
+        try:
+            self.digital_twin.learn_from_message(text, result)
+            self.personality_auditor.record_interaction(text, result)
+        except Exception:
+            pass
+
+        return result
+
+    def _post_process(self, text: str, result: str, command: str, start: float) -> None:
+        """Common post-processing after any command is handled."""
+        elapsed = (time.time() - start) * 1000
+        error = "ошибк" in result.lower() or "не удалось" in result.lower()
+        self.dex_logger.log_command(text, result, elapsed, success=not error)
+        self.anomaly.record_latency(elapsed)
+        if error:
+            self.anomaly.record_error()
+        self._collect_feedback(command, result)
+        self._post_command_hooks(text, result, command)
 
     def _post_command_hooks(self, text: str, result: str, command: str) -> None:
         if CONFIG.DIGITAL_TWIN_ENABLED:
@@ -982,8 +1073,8 @@ class DexAssistant:
         decision = parts[0].strip()
         chosen = parts[1].strip() if len(parts) > 1 else "текущий вариант"
         alt = parts[2].strip() if len(parts) > 2 else "альтернатива"
-        fork_id = self.counterfactual.save_fork(decision, chosen, alt)
-        return f"Развилка сохранена: {fork_id}. Через неделю напомню о пересмотре."
+        self.counterfactual.save_fork(decision, chosen, alt)
+        return "Развилка сохранена. Через неделю напомню о пересмотре."
 
     def _cmd_devils_advocate(self, args: str) -> str:
         if not args:
@@ -1057,6 +1148,8 @@ class DexAssistant:
             return "Сессия начата."
         if args == "save":
             info = self.continuum.prepare_handoff()
+            if info is None:
+                return "Ошибка сохранения сессии."
             return f"Сессия сохранена. {info.get('context_size', 0)} взаимодействий."
         if args == "restore":
             ok = self.continuum.restore_session()
@@ -1104,8 +1197,51 @@ class DexAssistant:
             lines.append(f"  Models: {', '.join(cache_info['loaded'])}")
         return "\n".join(lines)
 
+    def _cmd_plugin(self, args: str) -> str:
+        parts = args.strip().split(None, 1)
+        sub = parts[0].lower() if parts else "list"
+        if sub == "list":
+            plugins = self.plugins.list_plugins()
+            if not plugins:
+                return "Нет установленных плагинов"
+            lines = [f"── Плагины ({len(plugins)}) ──"]
+            for p in plugins:
+                status = "✅" if p["loaded"] and p["enabled"] else "⏹️" if not p["enabled"] else "⚠️"
+                lines.append(f"  {status} {p['name']} v{p['version']} — {p['description']}")
+            return "\n".join(lines)
+        if sub == "enable" and len(parts) > 1:
+            if self.plugins.enable_plugin(parts[1]):
+                return f"Плагин '{parts[1]}' включён"
+            return f"Плагин '{parts[1]}' не найден"
+        if sub == "disable" and len(parts) > 1:
+            if self.plugins.disable_plugin(parts[1]):
+                return f"Плагин '{parts[1]}' отключён"
+            return f"Плагин '{parts[1]}' не найден"
+        if sub == "info" and len(parts) > 1:
+            plugin = self.plugins.get_plugin(parts[1])
+            if not plugin:
+                return f"Плагин '{parts[1]}' не найден"
+            cmds = "\n".join(f"  /{k} — {v}" for k, v in plugin.commands.items())
+            return (
+                f"── {plugin.name} v{plugin.version} ──\n"
+                f"  {plugin.description}\n"
+                f"  Статус: {'✅ включён' if plugin.enabled else '⏹️ отключён'}\n"
+                f"  Загружен: {'да' if plugin._instance else 'нет'}\n"
+                f"  Файл: {plugin.module_path}\n"
+                f"  Команды:\n{cmds}"
+            )
+        return (
+            "Команды плагинов:\n"
+            "  плагин list — список плагинов\n"
+            "  плагин enable <имя> — включить\n"
+            "  плагин disable <имя> — отключить\n"
+            "  плагин info <имя> — подробно"
+        )
+
     def _collect_feedback(self, command: str, result: str) -> None:
         if not CONFIG.FEEDBACK_ENABLED:
+            return
+        if not command or command == "llm":
             return
         if any(w in result.lower() for w in ["ошибк", "не удалось", "не понимаю"]):
             self.feedback.ask(
@@ -1149,6 +1285,10 @@ class DexAssistant:
         hours, remainder = divmod(int(delta.total_seconds()), 3600)
         minutes, seconds = divmod(remainder, 60)
         return f"{hours}ч {minutes}м {seconds}с"
+
+    def get_conversation_summary(self, n: int = 5) -> list[dict[str, str]]:
+        """Return last N exchanges from conversation history."""
+        return self._conversation_history[-n * 2:]
 
     def cancel_generation(self) -> None:
         self.cmd_queue.cancel_current()

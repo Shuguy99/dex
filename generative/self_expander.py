@@ -52,7 +52,7 @@ class SelfExpander:
                 pass
         return []
 
-    def _save_proposals(self):
+    def _save_proposals(self) -> None:
         with open(self._proposals_path, "w", encoding="utf-8") as f:
             json.dump(self._proposals[-100:], f, ensure_ascii=False, indent=2)
 
@@ -149,7 +149,7 @@ class SelfExpander:
         git_dir = Path(self._repo_path) / ".git"
         return git_dir.is_dir()
 
-    def _git_commit(self, proposal: dict):
+    def _git_commit(self, proposal: dict) -> bool:
         try:
             subprocess.run(
                 ["git", "add", proposal["file_path"]],

@@ -134,7 +134,7 @@ class EthicalCoProcessor:
             return "💬 Мнения разделились. Предлагаю обсудить: показать детали?"
         return "✅ Действие этически приемлемо."
 
-    def _save_log(self, entry: dict):
+    def _save_log(self, entry: dict) -> None:
         try:
             with open(self._log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")

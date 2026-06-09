@@ -19,7 +19,7 @@ class HotSwapper:
         self._data_dir.mkdir(parents=True, exist_ok=True)
 
     def register_component(self, name: str, version: str, module_path: str,
-                            class_name: str, init_args: dict | None = None):
+                            class_name: str, init_args: dict | None = None) -> None:
         if name not in self._versions:
             self._versions[name] = []
         self._versions[name].append({

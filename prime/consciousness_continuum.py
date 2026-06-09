@@ -18,7 +18,7 @@ class ConsciousnessContinuum:
         self._session_history: deque[dict] = deque(maxlen=50)
         self._handoff_ready = False
 
-    def start_session(self, device_id: str, context: dict[str, Any] | None = None):
+    def start_session(self, device_id: str, context: dict[str, Any] | None = None) -> None:
         self._current_session = {
             "id": f"sess_{int(time.time())}",
             "device_id": device_id,
@@ -33,7 +33,7 @@ class ConsciousnessContinuum:
         self._handoff_ready = True
         logger.info(f"Session started on {device_id}")
 
-    def record_interaction(self, text: str, result: str):
+    def record_interaction(self, text: str, result: str) -> None:
         if not self._current_session:
             return
         self._current_session["history"].append({
@@ -42,11 +42,11 @@ class ConsciousnessContinuum:
             "result": result[:200]
         })
 
-    def set_pending_task(self, task: str):
+    def set_pending_task(self, task: str) -> None:
         if self._current_session:
             self._current_session["pending_tasks"].append(task)
 
-    def store_intermediate(self, key: str, value: Any):
+    def store_intermediate(self, key: str, value: Any) -> None:
         if self._current_session:
             self._current_session["intermediate_results"].append({
                 "key": key,

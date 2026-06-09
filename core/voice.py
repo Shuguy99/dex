@@ -3,6 +3,7 @@ import queue
 import re
 import threading
 from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger("dex.voice")
 
@@ -10,8 +11,8 @@ logger = logging.getLogger("dex.voice")
 class VoiceEngine:
     def __init__(self, lang: str = "ru-RU") -> None:
         self.lang = lang
-        self._recorder = None
-        self._synthesizer = None
+        self._recorder: Any = None
+        self._synthesizer: Any = None
         self._listening = False
         self._audio_queue: queue.Queue = queue.Queue()
         self._listen_thread: threading.Thread | None = None
@@ -22,14 +23,14 @@ class VoiceEngine:
     @property
     def available(self) -> bool:
         try:
-            import speech_recognition as sr
+            import speech_recognition as sr  # type: ignore[import-untyped]
             return sr.Recognizer() is not None
         except Exception:
             return False
 
-    def say(self, text: str):
+    def say(self, text: str) -> None:
         try:
-            import pyttsx3
+            import pyttsx3  # type: ignore[import-untyped]
             if self._synthesizer is None:
                 self._synthesizer = pyttsx3.init()
                 self._synthesizer.setProperty("rate", 180)
@@ -40,7 +41,7 @@ class VoiceEngine:
             logger.warning(f"TTS fallback needed: {e}")
             self._say_fallback(text)
 
-    def _say_fallback(self, text: str):
+    def _say_fallback(self, text: str) -> None:
         import subprocess
         try:
             subprocess.run(
@@ -70,18 +71,18 @@ class VoiceEngine:
             logger.error(f"Recognition error: {e}")
             return None
 
-    def start_background_listening(self, on_command: Callable[[str], None]):
+    def start_background_listening(self, on_command: Callable[[str], None]) -> None:
         self._on_command = on_command
         self._listening = True
         self._listen_thread = threading.Thread(target=self._listen_loop, daemon=True)
         self._listen_thread.start()
         logger.info("Background listening started")
 
-    def stop_listening(self):
+    def stop_listening(self) -> None:
         self._listening = False
         logger.info("Background listening stopped")
 
-    def _listen_loop(self):
+    def _listen_loop(self) -> None:
         import speech_recognition as sr
         r = sr.Recognizer()
         with sr.Microphone() as source:
@@ -98,7 +99,7 @@ class VoiceEngine:
                         continue
 
                     if self._wake_word in text:
-                        re.sub(rf"^{re.escape(self._wake_word)}\s*,?\s*", "", text).strip()
+                        text = re.sub(rf"^{re.escape(self._wake_word)}\s*,?\s*", "", text).strip()
                         self.say("Слушаю, сэр")
                         audio2 = r.listen(source, timeout=3, phrase_time_limit=10)
                         command_text = r.recognize_google(audio2, language=self.lang).lower()
@@ -112,11 +113,11 @@ class VoiceEngine:
                 except Exception as e:
                     logger.error(f"Listen loop error: {e}")
 
-    def enable_privacy_mode(self):
+    def enable_privacy_mode(self) -> None:
         self._privacy_mode = True
         logger.info("Privacy mode enabled")
 
-    def disable_privacy_mode(self):
+    def disable_privacy_mode(self) -> None:
         self._privacy_mode = False
         logger.info("Privacy mode disabled")
 

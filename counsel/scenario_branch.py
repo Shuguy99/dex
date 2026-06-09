@@ -25,7 +25,7 @@ class ScenarioTree:
                 pass
         return []
 
-    def _save(self):
+    def _save(self) -> None:
         with open(self._path, "w", encoding="utf-8") as f:
             json.dump(self._scenarios[-100:], f, ensure_ascii=False, indent=2)
 
@@ -84,7 +84,7 @@ class ScenarioTree:
             return score
 
         all_decisions = []
-        def _walk_branches(branches: list[dict], path: list[str]):
+        def _walk_branches(branches: list[dict], path: list[str]) -> None:
             for b in branches:
                 current_path = path + [b.get("decision", "?")]
                 score = _score_branch(b)
