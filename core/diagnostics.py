@@ -67,7 +67,10 @@ class ThreadDiagnostics:
 
     def get_blocked_threads(self, threshold: float = 2.0) -> list[str]:
         blocked = []
+        current_ident = threading.current_thread().ident
         for t in threading.enumerate():
+            if t.ident == current_ident:
+                continue
             if t.is_alive() and t.ident:
                 try:
                     frames = sys._current_frames().get(t.ident)
