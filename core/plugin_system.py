@@ -10,7 +10,8 @@ logger = logging.getLogger("dex.plugins")
 
 class Plugin:
     def __init__(self, name: str, version: str, description: str,
-                 module_path: str, commands: dict[str, str] | None = None) -> None:
+                 module_path: str, commands: dict[str, str] | None = None,
+                 sandbox: Any = None) -> None:
         self.name = name
         self.version = version
         self.description = description
@@ -19,8 +20,15 @@ class Plugin:
         self._module = None
         self._instance = None
         self.enabled = True
+        self._sandbox = sandbox
 
     def load(self) -> bool:
+        if self._sandbox is not None:
+            try:
+                self._sandbox.check_read(self.module_path)
+            except PermissionError:
+                logger.warning(f"Plugin load blocked by sandbox: {self.module_path}")
+                return False
         try:
             spec = importlib.util.spec_from_file_location(self.name, self.module_path)  # type: ignore[attr-defined]
             if spec and spec.loader:
@@ -45,11 +53,12 @@ class Plugin:
 
 
 class PluginSystem:
-    def __init__(self, plugins_dir: str | Path) -> None:
+    def __init__(self, plugins_dir: str | Path, sandbox: Any = None) -> None:
         self._plugins_dir = Path(plugins_dir)
         self._plugins_dir.mkdir(parents=True, exist_ok=True)
         self._plugins: dict[str, Plugin] = {}
         self._manifest_path = self._plugins_dir / "manifest.json"
+        self._sandbox = sandbox
 
     def discover(self) -> None:
         for f_path in self._plugins_dir.rglob("*.py"):
@@ -62,7 +71,8 @@ class PluginSystem:
                     version=manifest.get("version", "0.1.0"),
                     description=manifest.get("description", ""),
                     module_path=str(f_path),
-                    commands=manifest.get("commands", {})
+                    commands=manifest.get("commands", {}),
+                    sandbox=self._sandbox
                 )
             else:
                 plugin = Plugin(
@@ -70,7 +80,8 @@ class PluginSystem:
                     version="0.1.0",
                     description="",
                     module_path=str(f_path),
-                    commands={}
+                    commands={},
+                    sandbox=self._sandbox
                 )
             self._plugins[plugin.name] = plugin
 
@@ -83,7 +94,8 @@ class PluginSystem:
                     version=manifest.get("version", "0.1.0"),
                     description=manifest.get("description", ""),
                     module_path=str(py_path),
-                    commands=manifest.get("commands", {})
+                    commands=manifest.get("commands", {}),
+                    sandbox=self._sandbox
                 )
                 self._plugins[plugin.name] = plugin
 

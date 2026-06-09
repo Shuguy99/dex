@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from core.plugin_system import Plugin, PluginSystem
+from core.sandbox import FileSandbox, SandboxError
 
 
 SAMPLE_PLUGIN_CODE = '''
@@ -394,3 +395,48 @@ class TestPluginAssistantIntegration:
         assistant.initialize()
         result = assistant._cmd_plugin("info nonexistent")
         assert "не найден" in result
+
+
+class TestPluginSandboxIsolation:
+    """Plugin load respects sandbox check_read isolation."""
+
+    def test_plugin_load_blocked_by_sandbox(self, tmp_path: Path) -> None:
+        allowed_dir = tmp_path / "allowed"
+        allowed_dir.mkdir()
+        plugin_file = tmp_path / "plugin.py"
+        plugin_file.write_text(SAMPLE_PLUGIN_CODE, encoding="utf-8")
+        sandbox = FileSandbox(allowed_dirs=[str(allowed_dir)], system_paths=[])
+        p = Plugin("evil", "1.0", "desc", str(plugin_file), sandbox=sandbox)
+        ok = p.load()
+        assert ok is False
+        assert p._instance is None
+
+    def test_plugin_load_allowed_by_sandbox(self, tmp_path: Path) -> None:
+        sandbox = FileSandbox(allowed_dirs=[str(tmp_path)], system_paths=[])
+        plugin_file = tmp_path / "plugin.py"
+        plugin_file.write_text(SAMPLE_PLUGIN_CODE, encoding="utf-8")
+        p = Plugin("good", "1.0", "desc", str(plugin_file), sandbox=sandbox)
+        ok = p.load()
+        assert ok is True
+        assert p._instance is not None
+
+    def test_plugin_system_passes_sandbox(self, tmp_path: Path) -> None:
+        allowed_dir = tmp_path / "allowed"
+        allowed_dir.mkdir()
+        plugin_file = allowed_dir / "plugin.py"
+        plugin_file.write_text(SAMPLE_PLUGIN_CODE, encoding="utf-8")
+        # PluginSystem points to allowed_dir, but sandbox only allows a different dir
+        other_dir = tmp_path / "other"
+        other_dir.mkdir()
+        sandbox = FileSandbox(allowed_dirs=[str(other_dir)], system_paths=[])
+        ps = PluginSystem(str(allowed_dir), sandbox=sandbox)
+        ps.discover()
+        ok = ps.load_plugin("plugin")
+        assert ok is False
+
+    def test_no_sandbox_still_works(self, tmp_path: Path) -> None:
+        plugin_file = tmp_path / "plugin.py"
+        plugin_file.write_text(SAMPLE_PLUGIN_CODE, encoding="utf-8")
+        p = Plugin("nope", "1.0", "desc", str(plugin_file))
+        ok = p.load()
+        assert ok is True
