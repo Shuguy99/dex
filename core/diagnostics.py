@@ -81,8 +81,9 @@ class ThreadDiagnostics:
                             stack_lines.append(f"{f.f_code.co_filename}:{f.f_lineno} {f.f_code.co_name}")
                             f = f.f_back
                         stack = "\n".join(stack_lines) if stack_lines else ""
-                        if "time.sleep" not in stack:
-                            blocked.append(f"{t.name}: {stack[:200]}")
+                        if any(p in stack for p in ("time.sleep", "queue.get")):
+                            continue
+                        blocked.append(f"{t.name}: {stack[:200]}")
                 except Exception:
                     pass
         return blocked
