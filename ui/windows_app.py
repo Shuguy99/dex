@@ -97,6 +97,7 @@ CONFIG_PATH = Path("data/config_gui.ini")
 
 class DexWindowsApp(QMainWindow):
     status_changed = pyqtSignal(str, str)
+    _gui_task = pyqtSignal(object)
 
     def __init__(self, assistant=None) -> None:
         super().__init__()
@@ -119,6 +120,7 @@ class DexWindowsApp(QMainWindow):
         self._init_progress()
 
         self.status_changed.connect(self._on_status)
+        self._gui_task.connect(lambda fn: fn())
 
     def _init_progress(self):
         self._bar.setValue(10)
@@ -130,16 +132,7 @@ class DexWindowsApp(QMainWindow):
         self._bar_label.setText("Загрузка LLM в фоне...")
         if self.assistant:
             def on_llm(ok):
-                self._llm_init_done = True
-                self._bar.setValue(100)
-                self._bar_label.setText("LLM готова" if ok else "LLM не найдена (rule-based)")
-                self._input.setEnabled(True)
-                self._send_btn.setEnabled(True)
-                if ok:
-                    self._log("LLM загружена. Dex готов к работе.", "success")
-                else:
-                    self._log("LLM не отвечает. Работаю в офлайн-режиме.", "warn")
-                QTimer.singleShot(2000, self._hide_bar)
+                self._gui_task.emit(lambda: self._on_llm_ready(ok))
             self.assistant.init_llm_background(callback=on_llm)
         else:
             self._bar.setValue(100)
@@ -147,6 +140,18 @@ class DexWindowsApp(QMainWindow):
             self._input.setEnabled(True)
             self._send_btn.setEnabled(True)
             QTimer.singleShot(1000, self._hide_bar)
+
+    def _on_llm_ready(self, ok):
+        self._llm_init_done = True
+        self._bar.setValue(100)
+        self._bar_label.setText("LLM готова" if ok else "LLM не найдена (rule-based)")
+        self._input.setEnabled(True)
+        self._send_btn.setEnabled(True)
+        if ok:
+            self._log("LLM загружена. Dex готов к работе.", "success")
+        else:
+            self._log("LLM не отвечает. Работаю в офлайн-режиме.", "warn")
+        QTimer.singleShot(2000, self._hide_bar)
 
     def _hide_bar(self):
         self._bar.hide()
@@ -523,7 +528,7 @@ class DexWindowsApp(QMainWindow):
 
         def _do():
             ok = self.assistant.llm.pull_model(model_name)
-            self.assistant.gui_scheduler.schedule(lambda: self._on_install_done(model_name, ok))
+            self._gui_task.emit(lambda: self._on_install_done(model_name, ok))
         threading.Thread(target=_do, daemon=True).start()
 
     def _on_install_done(self, model_name, ok):
@@ -615,8 +620,8 @@ class DexWindowsApp(QMainWindow):
         self._input.setEnabled(False)
         self.assistant.cmd_queue.post(Command(
             text=text,
-            callback=lambda r: self.assistant.gui_scheduler.schedule(lambda: self._on_result(text, r)),
-            error_callback=lambda e: self.assistant.gui_scheduler.schedule(lambda: self._log(f"Ошибка: {e}", "error")),
+            callback=lambda r: self._gui_task.emit(lambda: self._on_result(text, r)),
+            error_callback=lambda e: self._gui_task.emit(lambda: self._log(f"Ошибка: {e}", "error")),
         ))
 
     def _on_result(self, _cmd, result):
