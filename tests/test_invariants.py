@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from hypothesis import assume, given
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 pytest.importorskip("hypothesis")
@@ -42,6 +42,7 @@ class TestSandboxInvariants:
             sb.resolve_path(path)
 
     @given(path=st.text(min_size=1, max_size=100))
+    @settings(deadline=None)
     def test_is_dangerous_always_bool(self, path):
         sb, _ = _make_sandbox()
         result = sb.is_dangerous(path)

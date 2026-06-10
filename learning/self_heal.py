@@ -34,8 +34,7 @@ class SelfHealer:
                 capture_output=True, text=True, timeout=60
             )
             if result.stdout:
-                import json as json_mod
-                issues = json_mod.loads(result.stdout)
+                issues = json.loads(result.stdout)
                 return [
                     {"tool": "pylint", "line": i.get("line", 0),
                      "message": i.get("message", ""),
@@ -74,8 +73,7 @@ class SelfHealer:
                 capture_output=True, text=True, timeout=60
             )
             if result.stdout:
-                import json as json_mod
-                data = json_mod.loads(result.stdout)
+                data = json.loads(result.stdout)
                 return [
                     {"tool": "bandit", "line": r.get("line_number", 0),
                      "message": r.get("issue_text", ""),

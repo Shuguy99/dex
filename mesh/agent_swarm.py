@@ -110,14 +110,13 @@ class AgentSwarm:
             return {"success": False, "error": f"Peer {peer_id} not found"}
 
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            sock.connect((peer["host"], peer["port"]))
-            payload = json.dumps({"type": "command", "text": command_text})
-            sock.send(payload.encode("utf-8"))
-            response = sock.recv(4096)
-            sock.close()
-            result = json.loads(response.decode("utf-8"))
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(5)
+                sock.connect((peer["host"], peer["port"]))
+                payload = json.dumps({"type": "command", "text": command_text})
+                sock.send(payload.encode("utf-8"))
+                response = sock.recv(4096)
+                result = json.loads(response.decode("utf-8"))
             return {"success": True, "result": result.get("result", ""),
                     "peer": peer_id}
         except Exception as e:
@@ -137,14 +136,13 @@ class AgentSwarm:
         for port_offset in range(1, 10):
             target_port = self._port + port_offset
             try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(0.5)
-                sock.connect(("127.0.0.1", target_port))
-                payload = json.dumps({"type": "ping"})
-                sock.send(payload.encode("utf-8"))
-                response = sock.recv(4096)
-                sock.close()
-                data = json.loads(response.decode("utf-8"))
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.settimeout(0.5)
+                    sock.connect(("127.0.0.1", target_port))
+                    payload = json.dumps({"type": "ping"})
+                    sock.send(payload.encode("utf-8"))
+                    response = sock.recv(4096)
+                    data = json.loads(response.decode("utf-8"))
                 peer_id = f"peer_{target_port}"
                 self.register_peer(peer_id, "127.0.0.1", target_port)
                 found.append({"peer_id": peer_id, "port": target_port,

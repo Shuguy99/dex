@@ -734,8 +734,8 @@ class DexAssistant:
                 docs = [d for d in results["documents"][0] if d][:2]
                 if docs:
                     memory_context = "\nRelevant context:\n" + "\n".join(docs)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Memory context retrieval failed: {e}")
 
         energy = self.circadian.get_current_phase() if hasattr(self, 'circadian') else "medium"
 
@@ -772,8 +772,8 @@ class DexAssistant:
         try:
             self.digital_twin.learn_from_message(text, result)
             self.personality_auditor.record_interaction(text, result)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Auto-learn failed: {e}")
 
         return result
 

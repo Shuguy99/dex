@@ -67,24 +67,31 @@ class WakeWordDetector:
 
         import pyaudio  # type: ignore[import-untyped]
         pa = pyaudio.PyAudio()
-        stream = pa.open(
-            rate=self._porcupine.sample_rate,
-            channels=1,
-            format=pyaudio.paInt16,
-            input=True,
-            frames_per_buffer=self._porcupine.frame_length
-        )
-        while self._active:
-            pcm = stream.read(self._porcupine.frame_length)
-            pcm_unpacked = struct.unpack_from("h" * self._porcupine.frame_length, pcm)
-            keyword_index = self._porcupine.process(pcm_unpacked)
-            if keyword_index >= 0:
-                with self._on_wake_lock:
-                    cb = self._on_wake
-                if cb:
-                    cb()
-        stream.close()
-        pa.terminate()
+        try:
+            stream = pa.open(
+                rate=self._porcupine.sample_rate,
+                channels=1,
+                format=pyaudio.paInt16,
+                input=True,
+                frames_per_buffer=self._porcupine.frame_length
+            )
+        except Exception as e:
+            logger.error(f"Porcupine audio stream failed: {e}")
+            pa.terminate()
+            return
+        try:
+            while self._active:
+                pcm = stream.read(self._porcupine.frame_length)
+                pcm_unpacked = struct.unpack_from("h" * self._porcupine.frame_length, pcm)
+                keyword_index = self._porcupine.process(pcm_unpacked)
+                if keyword_index >= 0:
+                    with self._on_wake_lock:
+                        cb = self._on_wake
+                    if cb:
+                        cb()
+        finally:
+            stream.close()
+            pa.terminate()
 
     def _text_fallback_loop(self) -> None:
         import speech_recognition as sr  # type: ignore[import-untyped]

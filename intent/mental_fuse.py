@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from datetime import datetime
@@ -75,12 +76,11 @@ class MentalFuse:
         }
 
     def _save_log(self, entry: dict) -> None:
-        import json
         try:
             with open(self._log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to save mental fuse log: {e}")
 
     def get_mental_fuse_summary(self) -> str:
         total = len(self._blocks)

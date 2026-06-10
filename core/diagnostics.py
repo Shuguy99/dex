@@ -50,8 +50,8 @@ class ThreadDiagnostics:
                             main_busy = "QEventLoop" not in str(
                                 traceback.extract_stack(frames)[-3:]
                             )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Frame analysis error: {e}")
 
             result = {
                 "ts": time.time(),
@@ -84,8 +84,8 @@ class ThreadDiagnostics:
                         if any(p in stack for p in ("time.sleep", "queue.get")):
                             continue
                         blocked.append(f"{t.name}: {stack[:200]}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Thread frame error: {e}")
         return blocked
 
     def report(self) -> str:
