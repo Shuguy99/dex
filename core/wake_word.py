@@ -12,6 +12,7 @@ class WakeWordDetector:
     def __init__(self, wake_word: str = "джарвис") -> None:
         self._wake_word = wake_word.lower()
         self._on_wake: Callable | None = None
+        self._on_wake_lock = threading.Lock()
         self._active = False
         self._thread: threading.Thread | None = None
         self._porcupine: Any = None
@@ -45,7 +46,8 @@ class WakeWordDetector:
         return re.sub(rf"^{re.escape(self._wake_word)}\s*,?\s*", "", text.lower()).strip()
 
     def start(self, on_wake: Callable[[], None]) -> None:
-        self._on_wake = on_wake
+        with self._on_wake_lock:
+            self._on_wake = on_wake
         self._active = True
         if self.available:
             self._thread = threading.Thread(target=self._porcupine_loop, daemon=True)
@@ -76,8 +78,11 @@ class WakeWordDetector:
             pcm = stream.read(self._porcupine.frame_length)
             pcm_unpacked = struct.unpack_from("h" * self._porcupine.frame_length, pcm)
             keyword_index = self._porcupine.process(pcm_unpacked)
-            if keyword_index >= 0 and self._on_wake:
-                self._on_wake()
+            if keyword_index >= 0:
+                with self._on_wake_lock:
+                    cb = self._on_wake
+                if cb:
+                    cb()
         stream.close()
         pa.terminate()
 
@@ -90,8 +95,11 @@ class WakeWordDetector:
                 try:
                     audio = r.listen(source, timeout=1, phrase_time_limit=3)
                     text = r.recognize_google(audio, language="ru-RU").lower()
-                    if self._wake_word in text and self._on_wake:
-                        self._on_wake()
+                    if self._wake_word in text:
+                        with self._on_wake_lock:
+                            cb = self._on_wake
+                        if cb:
+                            cb()
                 except (sr.WaitTimeoutError, sr.UnknownValueError):
                     continue
                 except Exception as e:

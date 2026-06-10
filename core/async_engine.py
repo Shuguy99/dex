@@ -3,6 +3,7 @@ import queue
 import threading
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -84,8 +85,10 @@ class AsyncCommandQueue:
 
 
 class TimeoutWrapper:
-    def __init__(self, default_timeout: float = 10.0) -> None:
+    def __init__(self, default_timeout: float = 10.0, max_workers: int = 4) -> None:
         self.default_timeout = default_timeout
+        self._pool = ThreadPoolExecutor(max_workers=max_workers,
+                                         thread_name_prefix="timeout-wrap")
 
     def call(self, fn: Callable, timeout: float | None = None, *args, **kwargs) -> Any:
         result: list[Any] = [None]
@@ -100,8 +103,7 @@ class TimeoutWrapper:
             finally:
                 done.set()
 
-        t = threading.Thread(target=worker, daemon=True, name="timeout-wrap")
-        t.start()
+        self._pool.submit(worker)
         ok = done.wait(timeout=(timeout or self.default_timeout))
         if not ok:
             raise TimeoutError(f"Operation timed out after {timeout or self.default_timeout}s")

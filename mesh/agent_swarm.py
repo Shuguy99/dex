@@ -104,7 +104,8 @@ class AgentSwarm:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def send_command(self, peer_id: str, command_text: str) -> dict[str, Any]:
-        peer = self._peers.get(peer_id)
+        with self._lock:
+            peer = self._peers.get(peer_id)
         if not peer:
             return {"success": False, "error": f"Peer {peer_id} not found"}
 
@@ -124,7 +125,9 @@ class AgentSwarm:
 
     def broadcast_command(self, command_text: str) -> list[dict[str, Any]]:
         results = []
-        for peer_id in list(self._peers.keys()):
+        with self._lock:
+            peer_ids = list(self._peers.keys())
+        for peer_id in peer_ids:
             result = self.send_command(peer_id, command_text)
             results.append(result)
         return results

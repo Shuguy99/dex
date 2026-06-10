@@ -23,7 +23,7 @@ class Camera:
         except Exception:
             return False
 
-    def start(self) -> None:
+    def start(self) -> bool:
         if self._privacy_mode:
             logger.warning("Camera blocked by privacy mode")
             return False

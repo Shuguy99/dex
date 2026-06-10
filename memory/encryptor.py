@@ -1,3 +1,4 @@
+import binascii
 import logging
 import os
 import sqlite3
@@ -20,7 +21,8 @@ class SecureMemory:
     def initialize(self) -> bool:
         try:
             self._conn = sqlite3.connect(self._db_path)
-            self._conn.execute(f"PRAGMA key = '{self._key}'")
+            key_hex = binascii.hexlify(self._key.encode()).decode()
+            self._conn.execute(f"PRAGMA key = \"x'{key_hex}'\"")
             self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS secrets (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,

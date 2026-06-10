@@ -137,8 +137,8 @@ class Orchestrator:
                 with open(f_path, encoding="utf-8") as f:
                     data = json.load(f)
                 agent = Agent(
-                    agent_id=data["id"],
-                    agent_type=data["type"],
+                    agent_id=data.get("id", "unknown"),
+                    agent_type=data.get("type", "generic"),
                     config=data.get("config", {})
                 )
                 agent.version = data.get("version", 1)

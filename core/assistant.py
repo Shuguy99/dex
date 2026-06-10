@@ -257,6 +257,7 @@ class DexAssistant:
         self._feedback_mode = False
         self._conversation_history: list[dict[str, str]] = []
         self._conversation_max = 50
+        self._conv_lock = threading.Lock()
         self._pending_task: dict[str, Any] | None = None
 
     def initialize(self) -> None:
@@ -591,7 +592,7 @@ class DexAssistant:
         results = self.vector_memory.search(query, n_results=5)
         if not results:
             return "Я пока ничего не помню, сэр"
-        memories = [f"- {r['text'][:100]}" for r in results]
+        memories = [f"- {r.get('text', '')[:100]}" for r in results]
         return "Нашёл в памяти:\n" + "\n".join(memories)
 
     def _cmd_search_kb(self, args: str) -> str:
@@ -619,10 +620,10 @@ class DexAssistant:
             stats = self.feedback.get_stats(CONFIG.FEEDBACK_DAYS_HISTORY)
             return (
                 f"Статистика оценок:\n"
-                f"  Всего: {stats['count']}\n"
-                f"  Средняя: {stats['avg']:.1f}/5\n"
-                f"  Мин: {stats['min']}, Макс: {stats['max']}\n"
-                f"  За период: {stats['days']} дней"
+                f"  Всего: {stats.get('count', 0)}\n"
+                f"  Средняя: {stats.get('avg', 0):.1f}/5\n"
+                f"  Мин: {stats.get('min', 0)}, Макс: {stats.get('max', 0)}\n"
+                f"  За период: {stats.get('days', 0)} дней"
             )
         rating = self.feedback.ask(args)
         if rating:
@@ -705,30 +706,27 @@ class DexAssistant:
         )
 
     def _conversational_respond(self, text: str) -> str:
-        """Handle natural conversation via LLM with full context and personality."""
-        # Store user message
-        self._conversation_history.append({"role": "user", "content": text})
-        # Trim history
-        if len(self._conversation_history) > self._conversation_max * 2:
-            self._conversation_history = self._conversation_history[-self._conversation_max * 2:]
+        with self._conv_lock:
+            self._conversation_history.append({"role": "user", "content": text})
+            if len(self._conversation_history) > self._conversation_max * 2:
+                self._conversation_history = self._conversation_history[-self._conversation_max * 2:]
 
-        # Check if LLM is ready
-        if not self.llm.ready:
-            # Fallback to rules
-            for rule in self.rule_engine.get_active_rules():
-                pattern = rule.get("pattern", "")
-                if pattern:
-                    import re
-                    if re.search(pattern, text, re.IGNORECASE):
-                        action = rule.get("expected_action", "")
-                        result = f"Согласно правилу: {action}"
-                        self._conversation_history.append({"role": "assistant", "content": result})
-                        return result
-            result = "Простите, сэр, я не понимаю эту команду"
-            self._conversation_history.append({"role": "assistant", "content": result})
-            return result
+            if not self.llm.ready:
+                for rule in self.rule_engine.get_active_rules():
+                    pattern = rule.get("pattern", "")
+                    if pattern:
+                        import re
+                        if re.search(pattern, text, re.IGNORECASE):
+                            action = rule.get("expected_action", "")
+                            result = f"Согласно правилу: {action}"
+                            self._conversation_history.append({"role": "assistant", "content": result})
+                            return result
+                result = "Простите, сэр, я не понимаю эту команду"
+                self._conversation_history.append({"role": "assistant", "content": result})
+                return result
 
-        # Check memory for relevant context
+            history_slice = self._conversation_history[-12:]
+
         memory_context = ""
         try:
             results = self.vector_memory.search(text, n_results=3)
@@ -739,17 +737,14 @@ class DexAssistant:
         except Exception:
             pass
 
-        # Check circadian energy level
         energy = self.circadian.get_current_phase() if hasattr(self, 'circadian') else "medium"
 
-        # Check cognitive load
         load_info = ""
         if hasattr(self, 'cognitive_load'):
             load_data = self.cognitive_load.get_load_score()
             if load_data.get("score", 0) > 0.7:
                 load_info = "\n[User appears busy or stressed — keep response concise]"
 
-        # Build system prompt with personality
         system_prompt = (
             f"Ты — Dex, голосовой ассистент. "
             f"Текущий режим: {self.personality.current_mode}. "
@@ -763,8 +758,7 @@ class DexAssistant:
 
         try:
             response = self.llm.chat(
-                messages=[{"role": "system", "content": system_prompt}] +
-                         self._conversation_history[-12:],
+                messages=[{"role": "system", "content": system_prompt}] + history_slice,
                 temperature=0.7,
             )
             result = response.strip()
@@ -772,10 +766,9 @@ class DexAssistant:
             logger.error(f"LLM conversation error: {e}")
             result = "Простите, сэр, произошла ошибка. Попробуйте ещё раз."
 
-        # Store assistant response
-        self._conversation_history.append({"role": "assistant", "content": result})
+        with self._conv_lock:
+            self._conversation_history.append({"role": "assistant", "content": result})
 
-        # Auto-learn from interaction
         try:
             self.digital_twin.learn_from_message(text, result)
             self.personality_auditor.record_interaction(text, result)
@@ -832,7 +825,7 @@ class DexAssistant:
             modes = self.personality.get_mode_list()
             return f"Текущий режим: {self.personality.current_mode}\nДоступные: {', '.join(modes)}"
         if self.personality.set_mode(args):
-            return f"Режим «{args}» активирован. {self.personality._mode['greeting']}"
+            return f"Режим «{args}» активирован. {self.personality._mode.get('greeting', '')}"
         return f"Нет такого режима: {args}. Доступны: {', '.join(self.personality.get_mode_list())}"
 
     def _cmd_personality(self, args: str) -> str:
@@ -918,7 +911,7 @@ class DexAssistant:
         if not args:
             return "Для какого типа ошибок выбрать стратегию?"
         result = self.meta_learner.select_strategy(args)
-        return f"Стратегия: {result['strategy']} — {result['reason']}"
+        return f"Стратегия: {result.get('strategy', '?')} — {result.get('reason', '?')}"
 
     def _cmd_synthetic_scenario(self, args: str) -> str:
         topics = [args] if args else ["распознавание речи", "автоматизация", "безопасность"]
@@ -1287,8 +1280,8 @@ class DexAssistant:
         return f"{hours}ч {minutes}м {seconds}с"
 
     def get_conversation_summary(self, n: int = 5) -> list[dict[str, str]]:
-        """Return last N exchanges from conversation history."""
-        return self._conversation_history[-n * 2:]
+        with self._conv_lock:
+            return self._conversation_history[-n * 2:]
 
     def cancel_generation(self) -> None:
         self.cmd_queue.cancel_current()

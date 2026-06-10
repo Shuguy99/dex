@@ -19,8 +19,12 @@ class RAGEngine:
 
     def _load_index(self) -> dict[str, dict[str, Any]]:
         if self._index_path.exists():
-            with open(self._index_path, encoding="utf-8") as f:
-                return json.load(f)
+            try:
+                with open(self._index_path, encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning(f"Corrupt index file, starting fresh: {e}")
+                return {}
         return {}
 
     def _save_index(self) -> None:

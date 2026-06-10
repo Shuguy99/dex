@@ -31,7 +31,7 @@ class Microphone:
         except Exception:
             return False
 
-    def start(self, on_audio: Callable[[bytes], None] | None = None) -> None:
+    def start(self, on_audio: Callable[[bytes], None] | None = None) -> bool:
         if self._privacy_mode:
             logger.warning("Microphone blocked by privacy mode")
             return False

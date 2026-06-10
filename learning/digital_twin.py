@@ -51,16 +51,18 @@ class DigitalTwin:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
         words = re.findall(r'\b\w+\b', text.lower())
-        uncommon = [w for w in words if len(w) > 6 and w not in self._profile["vocabulary"]]
+        vocab = self._profile.setdefault("vocabulary", [])
+        uncommon = [w for w in words if len(w) > 6 and w not in vocab]
         if uncommon:
-            self._profile["vocabulary"].extend(uncommon[:3])
-            self._profile["vocabulary"] = list(set(self._profile["vocabulary"]))[:100]
+            vocab.extend(uncommon[:3])
+            self._profile["vocabulary"] = list(set(vocab))[:100]
 
-        if context and context not in self._profile["learned_preferences"]:
-            self._profile["learned_preferences"].append(context)
-            self._profile["learned_preferences"] = self._profile["learned_preferences"][-50:]
+        prefs = self._profile.setdefault("learned_preferences", [])
+        if context and context not in prefs:
+            prefs.append(context)
+            self._profile["learned_preferences"] = prefs[-50:]
 
-        if self._llm and self._llm.ready and len(self._profile["vocabulary"]) % 10 == 0:
+        if self._llm and self._llm.ready and len(self._profile.setdefault("vocabulary", [])) % 10 == 0:
             self._update_style_profile()
 
         self._save_profile()

@@ -54,7 +54,7 @@ class VectorMemory:
             doc_id: str | None = None) -> str:
         if not self.ready:
             logger.warning("Vector store not ready, cannot add")
-            return
+            return ""
         doc_id = doc_id or str(hash(text))
         embedding = self._embed(text)
         self._collection.add(
